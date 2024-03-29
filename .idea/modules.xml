@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/qrapids-eval.iml" filepath="$PROJECT_DIR$/qrapids-eval.iml" />
+      <module fileurl="file://$PROJECT_DIR$/eval-service.iml" filepath="$PROJECT_DIR$/eval-service.iml" />
     </modules>
   </component>
 </project>

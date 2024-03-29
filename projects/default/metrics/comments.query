@@ -3,19 +3,20 @@
   "query": {
     "bool": {
       "must" : [
-      	{ "term" : { "bcKey" : "{{bcKey}}" } },
-        { "term" : { "snapshotDate" : "{{lastSnapshotDate}}" } },
+      	{ "term" : { "bc_key.keyword" : "{{bcKey}}" } },
+        { "term" : { "snapshot_date" : "{{evaluationDate}}" } },
         { "term" : { "metric" : "comment_lines_density"} },
-        { "term" : { "qualifier" : "FIL" }}
+        { "term" : { "qualifier" : "fil" }},
+        { "term": { "project_name.keyword": { "value": "{{project}}", "case_insensitive": true } } }
       ]
     }
   },
   "aggs": {
     "good" : {
       "range" : {
-        "field" : "floatvalue",
+        "field" : "value",
         "ranges" : [
-          { "from" : {{comments.threshold.lower}}, "to" : {{comments.threshold.upper}} }
+          { "from" : "{{comments.threshold.lower}}", "to" : "{{comments.threshold.upper}}" }
         ]
       }
     }

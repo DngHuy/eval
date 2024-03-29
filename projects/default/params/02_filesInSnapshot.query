@@ -4,8 +4,8 @@
     "bool": {
       "must": [
         { "term" : { "bcKey" : "{{bcKey}}" } },
-        { "term" : { "snapshotDate" : "{{lastSnapshotDate}}" } },
-        { "term" : { "qualifier" : "FIL" } }
+        { "term" : { "snapshot_date" : "{{lastSnapshotDate}}" } },
+        { "term" : { "qualifier" : "fil" } }
       ]
     }
   },

@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
 
+import jakarta.inject.Inject;
 import util.FileUtils;
 
 public class Eval {
@@ -28,9 +29,7 @@ public class Eval {
 	private static Date toDate;
 	
 	private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-	
-	
-	
+
 	public static void main(String[] args) {
 		
 		if ( args.length != 0 && args.length != 2 && args.length != 4 ) {
@@ -90,7 +89,7 @@ public class Eval {
 			for ( String ed : evaluationDates ) {
 				log.info("Evaluating project folder " + projectDir.getName() + " for evaluationDate " + ed + ".\n");
 				try {
-					EvalProject ep = new EvalProject(projectDir, ed);
+					EvalProject ep = EvalProject.createEvalProject(projectDir, ed);
 					ep.run();
 				} catch( Exception e ) {
 					e.printStackTrace();

@@ -1,22 +1,23 @@
-{ 
+{
   "size" : 0,
   "query": {
     "bool": {
       "must" : [
-      	{ "term" : { "bcKey" : "{{bcKey}}" } },
-        { "term" : { "snapshotDate" : "{{lastSnapshotDate}}" } },
-        { "term" : { "metric" : "function_complexity"} },
-        { "term" : { "qualifier" : "FIL" } }
+      	{ "term" : { "bc_key.keyword" : "{{bcKey}}" } },
+        { "term" : { "snapshot_date" : "{{evaluationDate}}" } },
+        { "term" : { "metric" : "complexity"} },
+        { "term" : { "qualifier" : "fil" } },
+        { "term": { "project_name.keyword": { "value": "{{project}}", "case_insensitive": true } } }
       ]
     }
   },
   "aggs": {
     "goodBad" : {
       "range" : {
-        "field" : "floatvalue",
+        "field" : "value",
         "ranges" : [
-          { "to" : {{avgcplx.threshold}} }, 
-          { "from" : {{avgcplx.threshold}} }
+          { "to" : "{{avgcplx.threshold}}" },
+          { "from" : "{{avgcplx.threshold}}" }
         ]
       }
     }

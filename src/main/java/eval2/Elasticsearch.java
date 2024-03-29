@@ -1,5 +1,6 @@
 package eval2;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
@@ -8,13 +9,26 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.SearchTemplateResponse;
+import co.elastic.clients.json.JsonData;
+import co.elastic.clients.json.JsonpMapper;
+import co.elastic.clients.json.JsonpUtils;
+import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.transport.ElasticsearchTransport;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
+import org.apache.http.Header;
+import org.apache.http.HttpHost;
+import org.apache.http.message.BasicHeader;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
+import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
@@ -44,6 +58,8 @@ public class Elasticsearch {
 	private static ObjectMapper mapper = new ObjectMapper();
 	
 	private String elasticsearchIP;
+
+	private ElasticsearchClient esClient;
 	
 	private static Map<String, TransportClient> clientCache = new HashMap<>();
 
@@ -53,6 +69,19 @@ public class Elasticsearch {
 	 * @param elasticsearchIP
 	 */
 	public Elasticsearch( String elasticsearchIP ) {
+		RestClient restClient = RestClient
+				.builder(HttpHost.create(new HttpHost("localhost", 9200).toHostString()))
+				.setDefaultHeaders(new Header[]{
+						new BasicHeader("Authorization", "ApiKey " + "Y0p6WmJJNEJVcXFuRjVhVXUwQk46cW9yYktzRFFROXU2ZkNQUkZPeWN3UQ==")
+				})
+				.build();
+
+		ElasticsearchTransport transport = new RestClientTransport(
+				restClient,
+				new JacksonJsonpMapper()
+		);
+		esClient = new ElasticsearchClient(transport);
+
 		
 		this.elasticsearchIP = elasticsearchIP;
 		
@@ -67,7 +96,8 @@ public class Elasticsearch {
 			client = new PreBuiltTransportClient(Settings.EMPTY).addTransportAddress( new InetSocketTransportAddress( address , 9300 ) );
 			if ( client.connectedNodes().size() == 0 ) {
 				log.severe( "Could not connect to Elasticsearch on " + elasticsearchIP + ", exiting." );
-				System.exit(0);
+//				System.exit(0);
+				clientCache.put(elasticsearchIP, client);
 			} else {
 				clientCache.put(elasticsearchIP, client);
 			}
@@ -103,9 +133,9 @@ public class Elasticsearch {
 		Map<String,Object> execParams = new HashMap<>();
 		
 		execParams.putAll(externalParameters);
-		execParams.putAll( queryDef.getQueryParameter() ); 
+		execParams.putAll( queryDef.getQueryParameter() );
 
-	    SearchResponse sr = search(queryDef.getQueryTemplate(), (String) queryDef.getProperty("index"), execParams );
+		SearchTemplateResponse<Object> sr = search(queryDef, (String) queryDef.getProperty("index"), execParams );
 	    
 	    Map<String,Object> executionResult = new HashMap<>();
 	    
@@ -119,11 +149,17 @@ public class Elasticsearch {
 	    
 	    String response = sr.toString();
 	    log.info("Elasticsearch Response: " + response.trim() + "\n");
-	    
+
+		JsonpMapper mapper = esClient._jsonpMapper();
+		String result = JsonpUtils.toJsonString(sr, mapper);
+
+		Pattern pattern = Pattern.compile("(range#|date_range#|histogram#|terms#|avg#|sum#|min#|max#|filter#)");
+		String sanitized = pattern.matcher(result).replaceAll("");
+
 	    try {
-	    	
-	    	JsonNode node = mapper.readTree(response); 
-		
+			ObjectMapper oB = new ObjectMapper();
+			JsonNode node = oB.readTree(sanitized);
+
 		    for ( Entry<String,String> e : queryResults.entrySet() ) { 
 		    	
 		    	JsonNode value = JsonPath.getNode( node, e.getValue() );
@@ -168,29 +204,54 @@ public class Elasticsearch {
 	
 	/**
 	 * Perform an Elasticsearch search
-	 * @param template The queryTemplate
+	 * @param queryDef The query with name & template
 	 * @param index The index to run the query on
 	 * @param params Parameters for the templateQuery
 	 * @return
 	 */
-	public SearchResponse search(String template, String index, Map<String,Object> params) {
+	public SearchTemplateResponse<Object> search(QueryDef queryDef, String index, Map<String,Object> params) {
 		
 		try {
-		
-			SearchResponse sr = new SearchTemplateRequestBuilder(client)
-		    		.setScript(template)
-		    		.setScriptType(ScriptType.INLINE)
-		    		.setRequest(new SearchRequest(index))
-		    		.setScriptParams(params)
-		    		.get()
-		    		.getResponse();
+			esClient.putScript(r -> r
+					.id(queryDef.getName())
+					.script(s -> s
+							.lang("mustache")
+							.source(queryDef.getQueryTemplate())
+					));
+
+			Map<String, JsonData> params2 = convertMapToJsonStrings(params);
+			SearchTemplateResponse<Object> response = esClient.searchTemplate(r -> r
+					.index("sonar_measures")
+					.id(queryDef.getName())
+					.params(params2), Object.class
+			);
+
+//			SearchResponse sr = new SearchTemplateRequestBuilder(client)
+//		    		.setScript(queryDef.getQueryTemplate())
+//		    		.setScriptType(ScriptType.INLINE)
+//		    		.setRequest(new SearchRequest(index))
+//		    		.setScriptParams(params)
+//		    		.get()
+//		    		.getResponse();
 			
-			return sr;
+			return response;
 		} catch (RuntimeException rte) {
 			log.severe(rte.getMessage() + "\n" + rte.toString() + "\n");
 			return null;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
-		
+
+	}
+
+	private static Map<String, JsonData> convertMapToJsonStrings(Map<String, Object> map) throws Exception {
+		Map<String, JsonData> jsonMap = new HashMap<>();
+		for (Map.Entry<String, Object> entry : map.entrySet()) {
+			String key = entry.getKey();
+			Object value = entry.getValue();
+			if (!value.toString().isEmpty()) jsonMap.put(key, JsonData.of(value));
+		}
+		return jsonMap;
 	}
 
 	public void storeMetrics(Properties projectProperties, String evaluationDate, Collection<Metric> metrics) {

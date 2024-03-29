@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import io.quarkus.runtime.StartupEvent;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Produces;
 import type.Factor;
 import type.IndexItem;
 import type.Indicator;
@@ -22,6 +26,7 @@ import java.util.logging.Logger;
 import util.Evaluator;
 import util.FileUtils;
 
+@ApplicationScoped
 public class EvalProject {
 	
 	private Logger log = Logger.getLogger(this.getClass().getName());
@@ -48,18 +53,32 @@ public class EvalProject {
 	
 	public String projectErrorStrategy;
 
-	
+	void onStart(@Observes StartupEvent ev) throws Exception {
+		log.info("The application has started");
+		int count = 0;
+		while(true) {
+			System.out.println(count++);
+		}
+
+	}
+
+
+
+	public static EvalProject createEvalProject(File projectFolder, String evaluationDate ) {
+		return new EvalProject(projectFolder, evaluationDate);
+	}
+
 	public EvalProject(File projectFolder, String evaluationDate ) {
-		
+
 		this.projectFolder = projectFolder;
-		
+
 		String projectPropertyFilename = projectFolder.getAbsolutePath() + File.separatorChar + "project.properties";
 		this.projectProperties = FileUtils.loadProperties( new File(projectPropertyFilename) );
-		
+
 		projectErrorStrategy = projectProperties.getProperty("onError", IndexItem.ON_ERROR_DROP);
 
 		this.evaluationDate = evaluationDate;
-		
+
 	}
 	
 	public void validateModel() {
