@@ -2,28 +2,26 @@ package eval2;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.client.IndicesAdminClient;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.xcontent.XContentType;
 
 public class IndexManager {
 	
-	private Logger log = Logger.getLogger(this.getClass().getName());
+	private final Logger log = Logger.getLogger(this.getClass().getName());
 	
-	private Elasticsearch es;
-	private IndicesAdminClient indicesAdminClient;
-	
+	private final Elasticsearch es;
+
 	/**
 	 * Create a IndexManager for an Elasticsearch instance
 	 * @param es
 	 */
 	public IndexManager( Elasticsearch es ) {
 		this.es = es;
-		indicesAdminClient = es.getClient().admin().indices();
 	}
 	
 	
@@ -34,13 +32,20 @@ public class IndexManager {
 	 * @param schemaPath Pathname of schema file
 	 * @param mappingType Mapping type
 	 */
-	public void createIndex( String indexName, String schemaPath, String mappingType ) {
+	public void createIndex( String indexName, String schemaPath, String mappingType ) throws IOException {
 		
 		String schema = loadSchema(schemaPath);
-		
-		indicesAdminClient.prepareCreate(indexName)
-			.addMapping( mappingType , schema, XContentType.JSON )
-			.get();
+
+		es.getEsClient().indices().create(cir -> cir.index(indexName));
+		PutMappingRequest.Builder putMappingRequestBuilder = new PutMappingRequest.Builder();
+		putMappingRequestBuilder.index(indexName);
+		putMappingRequestBuilder.withJson(new StringReader(schema));
+		PutMappingRequest putMappingRequest = putMappingRequestBuilder.build();
+		es.getEsClient().indices().putMapping(putMappingRequest);
+
+//		indicesAdminClient.prepareCreate(indexName)
+//			.addMapping( mappingType , schema, XContentType.JSON )
+//			.get();
 		
 	}
 
