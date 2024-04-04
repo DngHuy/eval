@@ -336,10 +336,12 @@ public class Elasticsearch {
 	}
 	
 	private void checkCreateIndex( String indexName, String schemaPathname, String mappingType ) {
-
 		try {
-			IndexManager mgr = new IndexManager(this);
-			mgr.createIndex(indexName, schemaPathname, mappingType);
+			BooleanResponse result = esClient.indices().exists(ExistsRequest.of(e -> e.index(indexName)));
+			if (!result.value()) {
+				IndexManager mgr = new IndexManager(this);
+				mgr.createIndex(indexName, schemaPathname, mappingType);
+			}
 		} catch ( Exception e) {
 			log.info( e.getMessage() + "\n"); 
 		}
@@ -352,17 +354,26 @@ public class Elasticsearch {
 			log.warning("No items stored");
 			return null;
 		}
-		
-		BulkRequestBuilder brb = client.prepareBulk().setRefreshPolicy(RefreshPolicy.IMMEDIATE);
-		
-		for (IndexItem i : items ) {
-			brb.add( client.prepareIndex(index, mappingType, i.getElasticId()  ).setSource( i.getMap() ) );
+
+		BulkRequest.Builder br = new BulkRequest.Builder();
+		for (IndexItem item : items) {
+			br.operations(op -> op
+					.index(idx -> idx
+							.index(index)
+							.id(item.getElasticId())
+							.document(item)
+					)
+			);
 		}
 
-		
-		BulkResponse bulkResponse = brb.get();
-		
-		return bulkResponse;
+		BulkResponse result = null;
+		try {
+			result = esClient.bulk(br.build());
+		} catch (IOException e) {
+			log.info( e.getMessage() + "\n");
+		}
+
+		return result;
 
 	}
 	
@@ -374,15 +385,15 @@ public class Elasticsearch {
 		}
 		
 		String result = "";
-		
-		if ( br.hasFailures() ) {
-			for ( BulkItemResponse bir : br.getItems() ) {
-				if (bir.getFailure() != null) {
-					result += bir.getFailure().getId() + ":" + bir.getFailureMessage() + " \n";
+
+		if ( br.errors() ) {
+			for ( BulkResponseItem bri : br.items() ) {
+				if (bri.error() != null) {
+					result += bri.error().type() + ":" + bri.error().reason() + " \n";
 				}
 			}
 		} else {
-			result = "BulkUpdate success! " + br.getItems().length + " items written!\n" ;
+			result = "BulkUpdate success! " + br.items().size() + " items written!\n" ;
 		}
 		
 		return result;
@@ -390,21 +401,30 @@ public class Elasticsearch {
 	
 	private long deleteCurrentEvaluation( String indexName, String project, String evaluationDate ) {
 		try {
-			BulkByScrollResponse response =
-					  DeleteByQueryAction.INSTANCE.newRequestBuilder(client)
-					    .filter(  
-					    		QueryBuilders.boolQuery()
-					    		.must(QueryBuilders.matchQuery("evaluationDate", evaluationDate))
-					    		.must(QueryBuilders.matchQuery("project", project))
-					    )
-					    .source(indexName)                                  
-					    .get();  
-			
-			return response.getDeleted();
-		} catch ( RuntimeException rte ) {
-			return 0;
+			DeleteByQueryRequest request = DeleteByQueryRequest.of(
+					d -> d
+							.index(indexName)
+							.query(q -> q
+									.bool(b -> b
+											.must(m -> m
+													.term(t -> t
+															.field("evaluationDate")
+															.value(evaluationDate)))
+											.must(m -> m
+													.term(t -> t
+															.field("project_name")
+															.value(project)))
+									)
+							)
+			);
+			DeleteByQueryResponse response = esClient.deleteByQuery(request);
+			return response.deleted() == null ? 0 : response.deleted();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
-
+	public ElasticsearchClient getEsClient() {
+		return esClient;
+	}
 }
