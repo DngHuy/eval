@@ -1,42 +1,38 @@
 package eval2;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
-import java.util.Properties;
 import java.util.regex.Pattern;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.core.SearchTemplateResponse;
+import co.elastic.clients.elasticsearch.core.*;
+import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.elasticsearch.indices.ExistsRequest;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpMapper;
 import co.elastic.clients.json.JsonpUtils;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
+import co.elastic.clients.transport.endpoints.BooleanResponse;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.json.spi.JsonProvider;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.message.BasicHeader;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryAction;
-import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.script.mustache.SearchTemplateRequestBuilder;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -49,17 +45,16 @@ import type.Metric;
 import type.Relation;
 import util.JsonPath;
 
+@ApplicationScoped
 public class Elasticsearch {
 	
-	private Logger log = Logger.getLogger(this.getClass().getName());
+	private final Logger log = Logger.getLogger(this.getClass().getName());
 	
 	private TransportClient client;
 
-	private static ObjectMapper mapper = new ObjectMapper();
-	
-	private String elasticsearchIP;
+	private final String elasticsearchIP;
 
-	private ElasticsearchClient esClient;
+	private final ElasticsearchClient esClient;
 	
 	private static Map<String, TransportClient> clientCache = new HashMap<>();
 
@@ -82,7 +77,6 @@ public class Elasticsearch {
 		);
 		esClient = new ElasticsearchClient(transport);
 
-		
 		this.elasticsearchIP = elasticsearchIP;
 		
 		if ( clientCache.containsKey(elasticsearchIP) ) {
@@ -219,22 +213,13 @@ public class Elasticsearch {
 							.source(queryDef.getQueryTemplate())
 					));
 
-			Map<String, JsonData> params2 = convertMapToJsonStrings(params);
-			SearchTemplateResponse<Object> response = esClient.searchTemplate(r -> r
-					.index("sonar_measures")
+			Map<String, JsonData> params2 = convertMapValueToJsonData(params);
+
+			return esClient.searchTemplate(r -> r
+					.index(index)
 					.id(queryDef.getName())
 					.params(params2), Object.class
 			);
-
-//			SearchResponse sr = new SearchTemplateRequestBuilder(client)
-//		    		.setScript(queryDef.getQueryTemplate())
-//		    		.setScriptType(ScriptType.INLINE)
-//		    		.setRequest(new SearchRequest(index))
-//		    		.setScriptParams(params)
-//		    		.get()
-//		    		.getResponse();
-			
-			return response;
 		} catch (RuntimeException rte) {
 			log.severe(rte.getMessage() + "\n" + rte.toString() + "\n");
 			return null;
@@ -244,19 +229,9 @@ public class Elasticsearch {
 
 	}
 
-	private static Map<String, JsonData> convertMapToJsonStrings(Map<String, Object> map) throws Exception {
-		Map<String, JsonData> jsonMap = new HashMap<>();
-		for (Map.Entry<String, Object> entry : map.entrySet()) {
-			String key = entry.getKey();
-			Object value = entry.getValue();
-			if (!value.toString().isEmpty()) jsonMap.put(key, JsonData.of(value));
-		}
-		return jsonMap;
-	}
-
 	public void storeMetrics(Properties projectProperties, String evaluationDate, Collection<Metric> metrics) {
 		
-		String metricIndex = projectProperties.getProperty("metrics.index") + "." + projectProperties.getProperty("project.name");
+		String metricIndex = projectProperties.getProperty("metrics.index");
 		
 		checkCreateIndex(  metricIndex, "schema/metric.schema", "metrics" );
 		
@@ -268,13 +243,13 @@ public class Elasticsearch {
 		
 		log.info("deleted " + deleted + " metrics (evaluationDate=" + evaluationDate + ")\n");
 		
-		long deleted2 = deleteCurrentEvaluation(
-				projectProperties.getProperty("relations.index") + "." + projectProperties.getProperty("project.name"),  
-				projectProperties.getProperty("project.name"),
-				evaluationDate
-		);
-		
-		log.info("deleted " + deleted2 + " relations (evaluationDate=" + evaluationDate + ")\n");
+//		long deleted2 = deleteCurrentEvaluation(
+//				projectProperties.getProperty("relations.index"),
+//				projectProperties.getProperty("project.name"),
+//				evaluationDate
+//		);
+//
+//		log.info("deleted " + deleted2 + " relations (evaluationDate=" + evaluationDate + ")\n");
 		
 		BulkResponse br = writeBulk(evaluationDate, metricIndex, "metrics", metrics);
 		
@@ -285,20 +260,20 @@ public class Elasticsearch {
 	
 	public void storeRelations(Properties projectProperties, String evaluationDate, Collection<Relation> relations) {
 		
-		String indexName = projectProperties.getProperty("relations.index") + "." + projectProperties.getProperty("project.name");;
+		String indexName = projectProperties.getProperty("relations.index"); // + "." + projectProperties.getProperty("project.name");
 		
 		checkCreateIndex(  indexName, "schema/relation.schema", "relations" ); 
 		
 		BulkResponse br = writeBulk(evaluationDate, indexName, "relations", relations);
 		
 		log.info( bulkResponseCheck(br) );
-		
+
 	}
 	
 
 	public void storeFactors(Properties projectProperties, String evaluationDate, Collection<Factor> factors ) {
 		
-		String indexName = projectProperties.getProperty("factors.index") + "." + projectProperties.getProperty("project.name");;
+		String indexName = projectProperties.getProperty("factors.index");
 		
 		checkCreateIndex(  indexName, "schema/factor.schema", "factors" );
 		
@@ -317,7 +292,7 @@ public class Elasticsearch {
 	}
 	
 	public void storeIndicators(Properties projectProperties, String evaluationDate, Collection<Indicator> indicators) {
-		String indexName = projectProperties.getProperty("indicators.index") + "." + projectProperties.getProperty("project.name");;
+		String indexName = projectProperties.getProperty("indicators.index") + "." + projectProperties.getProperty("project.name");
 		
 		checkCreateIndex(  indexName, "schema/indicator.schema", "indicators" );
 		
@@ -348,22 +323,35 @@ public class Elasticsearch {
 		
 	}
 	
-	private BulkResponse writeBulk( String evaluationDate, String index, String mappingType, Collection<? extends IndexItem> items) {
+	private BulkResponse writeBulk( String evaluationDate, String index, String mappingType, Collection<? extends IndexItem> items)  {
 		
 		if ( items.size() == 0 ) {
 			log.warning("No items stored");
 			return null;
 		}
 
+		ObjectMapper oM = new ObjectMapper();
+
 		BulkRequest.Builder br = new BulkRequest.Builder();
 		for (IndexItem item : items) {
-			br.operations(op -> op
-					.index(idx -> idx
-							.index(index)
-							.id(item.getElasticId())
-							.document(item)
-					)
-			);
+			try {
+				String data = oM.writeValueAsString(item.getMap());
+				Reader reader =  new StringReader(data);
+				JsonpMapper mapper = esClient._jsonpMapper();
+				JsonProvider jsonProvider = mapper.jsonProvider();
+				JsonData json = JsonData.from(jsonProvider.createParser(reader), mapper);
+
+				br.operations(op -> op
+						.index(c -> c
+								.index(index)
+								.id(item.getElasticId())
+								.document(json)
+						)
+				);
+			} catch (JsonProcessingException e) {
+				log.info( e.getMessage() + "\n");
+			}
+
 		}
 
 		BulkResponse result = null;
@@ -384,19 +372,19 @@ public class Elasticsearch {
 			return "";
 		}
 		
-		String result = "";
+		StringBuilder result = new StringBuilder();
 
 		if ( br.errors() ) {
 			for ( BulkResponseItem bri : br.items() ) {
 				if (bri.error() != null) {
-					result += bri.error().type() + ":" + bri.error().reason() + " \n";
+					result.append(bri.error().type()).append(":").append(bri.error().reason()).append(" \n");
 				}
 			}
 		} else {
-			result = "BulkUpdate success! " + br.items().size() + " items written!\n" ;
+			result = new StringBuilder("BulkUpdate success! " + br.items().size() + " items written!\n");
 		}
 		
-		return result;
+		return result.toString();
 	}
 	
 	private long deleteCurrentEvaluation( String indexName, String project, String evaluationDate ) {
@@ -426,5 +414,15 @@ public class Elasticsearch {
 
 	public ElasticsearchClient getEsClient() {
 		return esClient;
+	}
+
+	private static Map<String, JsonData> convertMapValueToJsonData(Map<String, Object> map) throws Exception {
+		Map<String, JsonData> jsonMap = new HashMap<>();
+		for (Map.Entry<String, Object> entry : map.entrySet()) {
+			String key = entry.getKey();
+			Object value = entry.getValue();
+			if (!value.toString().isEmpty()) jsonMap.put(key, JsonData.of(value));
+		}
+		return jsonMap;
 	}
 }

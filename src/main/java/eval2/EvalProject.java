@@ -12,7 +12,6 @@ import java.util.Map.Entry;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.inject.Produces;
 import type.Factor;
 import type.IndexItem;
 import type.Indicator;
@@ -29,15 +28,15 @@ import util.FileUtils;
 @ApplicationScoped
 public class EvalProject {
 	
-	private Logger log = Logger.getLogger(this.getClass().getName());
+	private final Logger log = Logger.getLogger(this.getClass().getName());
 	
 	private String evaluationDate;
 
 	// project folder containing queries, properties etc.
-	private File projectFolder;
+	private final File projectFolder;
 	
 	// contents of projectFolder/propect.properties
-	private Properties projectProperties;
+	private final Properties projectProperties;
 	
 	// Elasticsearch source
 	private Elasticsearch elasticSource;
@@ -51,7 +50,7 @@ public class EvalProject {
 	// metric query set of this project
 	private Map<String,QueryDef> metricQuerySet;
 	
-	public String projectErrorStrategy;
+	private final String projectErrorStrategy;
 
 	void onStart(@Observes StartupEvent ev) throws Exception {
 		log.info("The application has started");
@@ -116,17 +115,17 @@ public class EvalProject {
 		log.info("Storing metrics (" + metrics.size() + " computed)\n");
 		elasticTarget.storeMetrics( projectProperties, evaluationDate, metrics );
 
-		/*
-		List<Relation> metricrelations = computeMetricRelations(metrics);
-		log.info("Storing metric relations (" + metricrelations.size() + " computed)\n");
-		elasticTarget.storeRelations( projectProperties, evaluationDate, metricrelations );
-		
-		log.info("Computing Factors ...\n"); 
+
+		List<Relation> metricRelations = computeMetricRelations(metrics);
+		log.info("Storing metric relations (" + metricRelations.size() + " computed)\n");
+		elasticTarget.storeRelations( projectProperties, evaluationDate, metricRelations );
+
+		log.info("Computing Factors ...\n");
 		Collection<Factor> factors = computeFactors();
-		
+
 		log.info("Storing factors (" + factors.size() + " computed)\n");
 		elasticTarget.storeFactors( projectProperties, evaluationDate, factors );
-		
+		/*
 		log.info("Storing factor relations ... \n");
 		List<Relation> factorrelations = computeFactorRelations(factors);
 		elasticTarget.storeRelations( projectProperties, evaluationDate, factorrelations );
@@ -151,7 +150,7 @@ public class EvalProject {
 		
 		String factorQueryDir = projectFolder.getAbsolutePath() + File.separatorChar + "factors";
 		QueryDef factorQuery = loadQueryDef(factorQueryDir, "factor");
-		factorQuery.setIndex( factorQuery.getProperty("index") + "." + projectProperties.getProperty("project.name"));
+		factorQuery.setIndex( factorQuery.getProperty("index"));
 		
 		Map<String,Factor> factorMap = readFactorMap();
 		
@@ -466,7 +465,7 @@ public class EvalProject {
 	
 	/**
 	 * Compute relations between (enabled) Metrics and Factors
-	 * @param metrics 
+	 * @param metrics List of Level 1 Metrics
 	 * @return List of Relation
 	 */
 	private List<Relation> computeMetricRelations( List<Metric> metrics ) {
@@ -478,10 +477,10 @@ public class EvalProject {
 		for ( Metric metric : metrics ) {
 			for ( int i = 0; i < metric.getFactors().length; i++ ) {
 				
-				String factorid = metric.getFactors()[i];
+				String factorId = metric.getFactors()[i];
 				Double weight = metric.getWeights()[i];
 
-				Factor factor = factorMap.get(factorid);
+				Factor factor = factorMap.get(factorId);
 				
 				if ( factor == null ) {
 					log.info( "Warning: Impact of Metric " + metric.getName() + " on undefined Factor " + factor + "is not stored."  );
@@ -519,8 +518,7 @@ public class EvalProject {
 			
 			Boolean enabled = Boolean.parseBoolean(  factorProperties.getProperty(f + ".enabled") );
 			String project = projectProperties.getProperty("project.name");
-			String factor = f;
-			
+
 			String[] indicators = factorProperties.getProperty(f + ".indicators").split(",");
 			Double[] weights = getAsDoubleArray( factorProperties.getProperty(f + ".weights") );
 			
@@ -537,7 +535,7 @@ public class EvalProject {
 				onError = projectErrorStrategy;
 			}
 
-			Factor fact = new Factor(enabled, project, factor, evaluationDate, indicators, weights, name, description, datasource, value, info, onError );
+			Factor fact = new Factor(enabled, project, f, evaluationDate, indicators, weights, name, description, datasource, value, info, onError );
 			result.put(f, fact);
 			
 		}
@@ -559,30 +557,29 @@ public class EvalProject {
 		Properties indicatorProperties = FileUtils.loadProperties(indicatorPropFile);
 		List<String> indicators = getFactors( indicatorProperties );
 		
-		for ( String i : indicators ) {
+		for ( String indicator : indicators ) {
 			
-			Boolean enabled = Boolean.parseBoolean(  indicatorProperties.getProperty(i + ".enabled") );
+			Boolean enabled = Boolean.parseBoolean(  indicatorProperties.getProperty(indicator + ".enabled") );
 			String project = projectProperties.getProperty("project.name");
-			String indicator = i;
+
+			String[] parents = indicatorProperties.getProperty(indicator + ".parents").split(",");
+			Double[] weights = getAsDoubleArray( indicatorProperties.getProperty(indicator + ".weights") );
 			
-			String[] parents = indicatorProperties.getProperty(i + ".parents").split(",");
-			Double[] weights = getAsDoubleArray( indicatorProperties.getProperty(i + ".weights") );
-			
-			String name = indicatorProperties.getProperty(i + ".name");
-			String description = indicatorProperties.getProperty(i + ".description");
+			String name = indicatorProperties.getProperty(indicator + ".name");
+			String description = indicatorProperties.getProperty(indicator + ".description");
 			String datasource = null;
 			
 			Double value = null;
 			String info = null;
 			
-			String onError = indicatorProperties.getProperty(i + ".onError");
+			String onError = indicatorProperties.getProperty(indicator + ".onError");
 			
 			if ( onError == null ) {
 				onError = projectErrorStrategy;
 			}
 
 			Indicator ind = new Indicator(enabled, project, indicator, evaluationDate, parents, weights, name, description, datasource, value, info, onError );
-			result.put(i, ind);
+			result.put(indicator, ind);
 			
 		}
 		
@@ -697,8 +694,8 @@ public class EvalProject {
 	 * Return Property values with comma as a Double array:
 	 * "1.5,2.3" becomes [1.5,2.3]
 	 * 
-	 * @param key
-	 * @return
+	 * @param commaSeparated Comma separated string with double values
+	 * @return Double-Array
 	 */
 	public Double[] getAsDoubleArray(String commaSeparated) {
 		
