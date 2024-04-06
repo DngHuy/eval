@@ -462,6 +462,18 @@ public class EvalProject {
 		return result;
 		
 	}
+
+	private Double calculateMAE(List<Integer> taskPerUser, int total, int size) {
+		double optimalWorkload = (100.00 / size) / 100.00;
+		List<Double> workload = taskPerUser
+				.stream()
+				.mapToDouble(num -> (double) num / total)
+				.boxed().toList();
+
+		return 1 - workload.stream()
+				.mapToDouble(value -> Math.abs(value - optimalWorkload))
+				.sum();
+	}
 	
 	/**
 	 * Compute relations between (enabled) Metrics and Factors

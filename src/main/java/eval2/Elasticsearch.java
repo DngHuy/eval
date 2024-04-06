@@ -24,6 +24,8 @@ import co.elastic.clients.transport.endpoints.BooleanResponse;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.json.spi.JsonProvider;
 import org.apache.http.Header;
@@ -147,18 +149,26 @@ public class Elasticsearch {
 		JsonpMapper mapper = esClient._jsonpMapper();
 		String result = JsonpUtils.toJsonString(sr, mapper);
 
-		Pattern pattern = Pattern.compile("(range#|date_range#|histogram#|terms#|avg#|sum#|min#|max#|filter#)");
+		Pattern pattern = Pattern.compile("(range#|date_range#|histogram#|terms#|avg#|sum#|min#|max#|filter#|sterms#|value_count#|cardinality#)");
 		String sanitized = pattern.matcher(result).replaceAll("");
 
 	    try {
 			ObjectMapper oB = new ObjectMapper();
 			JsonNode node = oB.readTree(sanitized);
 
-		    for ( Entry<String,String> e : queryResults.entrySet() ) { 
-		    	
-		    	JsonNode value = JsonPath.getNode( node, e.getValue() );
-		    	Object o = convert( value );
-		    	executionResult.put(e.getKey(), o);
+		    for ( Entry<String,String> e : queryResults.entrySet() ) {
+				JsonNode value = null;
+				Object o = null;
+				if (!queryDef.getName().equals("workdistribution") && !e.getKey().equals("distribution")) {
+					value = JsonPath.getNode(node, e.getValue());
+					o = convert(value);
+				} else {
+					value = JsonPath.getNode( node, e.getValue() );
+					JsonArray hits = getBucket(value.toString());
+					List<Integer> taskClosedPerUser = extractDocCounts(hits);
+					o = calculateMAE(taskClosedPerUser, taskClosedPerUser.stream().mapToInt(Integer::intValue).sum(), taskClosedPerUser.size());
+				}
+				executionResult.put(e.getKey(), o);
 		    }
 
 	    } catch ( Exception e ) {
@@ -167,6 +177,33 @@ public class Elasticsearch {
 	    
 
 		return executionResult;
+	}
+
+	private JsonArray getBucket(String responseBody) {
+		JsonObject json = new JsonObject(responseBody);
+		return json.getJsonArray("buckets");
+	}
+
+	private List<Integer> extractDocCounts(JsonArray jsonArray) {
+		List<Integer> docCounts = new ArrayList<>();
+		for (int i = 0; i < jsonArray.size(); i++) {
+			JsonObject obj = jsonArray.getJsonObject(i);
+			int docCount = obj.getInteger("doc_count");
+			docCounts.add(docCount);
+		}
+		return docCounts;
+	}
+
+	private Double calculateMAE(List<Integer> taskPerUser, int total, int size) {
+		double optimalWorkload = (100.00 / size) / 100.00;
+		List<Double> workload = taskPerUser
+				.stream()
+				.mapToDouble(num -> (double) num / total)
+				.boxed().toList();
+
+		return 1 - workload.stream()
+				.mapToDouble(value -> Math.abs(value - optimalWorkload))
+				.sum();
 	}
 	
 	/**
