@@ -32,6 +32,8 @@ public class Indexes {
 
 	private String snapshotDate;
 
+	private String gitlabIssuesIndex;
+
 	private String jiraIndex;
 	private String jiraProjectKey;
 	
@@ -71,7 +73,9 @@ public class Indexes {
 			snapshotDate = indexProps.getProperty("sonarqube.snapshotDate");
 			sonarqubeProjectId = indexProps.getProperty("sonarqube.projectId");
 			sonarqubeProjectIdField = indexProps.getProperty("sonarqube.projectId.field");
-			
+
+			gitlabIssuesIndex = indexProps.getProperty("gitlab.issues.index");
+
 			jiraIndex = indexProps.getProperty("jira.index");
 			jiraProjectKey = indexProps.getProperty("jira.projectkey");
 			
