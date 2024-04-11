@@ -18,17 +18,17 @@ import util.FileUtils;
 
 public class Eval {
 	
-	private static Logger log = Logger.getLogger("eval2.Eval");
+	private static final Logger log = Logger.getLogger("eval2.Eval");
 	
 	private static final String PROJECTS_DIR = "./projects";
 	private static final File PROJECTS_FOLDER = new File(PROJECTS_DIR);
 	
-	private static List<String> evaluationDates = new ArrayList<>();
+	private static final List<String> evaluationDates = new ArrayList<>();
 	
 	private static Date fromDate;
 	private static Date toDate;
 	
-	private static SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+	private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
 	public static void main(String[] args) {
 		
@@ -79,9 +79,6 @@ public class Eval {
 		List<File> projectFolders = getProjectFolders(PROJECTS_DIR);
 
 		evaluate(projectFolders);
-
-		notifyDashboard();
-		
 	}
 
 	private static void evaluate( List<File> projectFolders ) {
@@ -140,33 +137,6 @@ public class Eval {
 		System.out.println("java -jar qrapids-eval.jar evaluationDate 2019-01-31");
 		System.out.println("java -jar qrapids-eval.jar from 2019-01-01 to 2019-01-31");
 	}
-
-
-	private static int notifyDashboard() {
-		
-		File f = new File("./projects/eval.properties");
-		Properties props = FileUtils.loadProperties(f);
-		String notificationURL = props.getProperty("dashboard.notification.url");
-				
-		URL obj;
-		try {
-			
-			obj = new URL(notificationURL);
-			HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-
-			// optional default is GET
-			con.setRequestMethod("GET");
-
-			return  con.getResponseCode();
-			
-		} catch (Exception e) {
-			// e.printStackTrace();
-			log.warning( "Could not nofify dashboard, URL=" + notificationURL + ".\n" );
-			return 1;
-		} 
-		
-	}
-
 
 	private static List<File> getProjectFolders(String dir) {
 		List<File> result = new ArrayList<>();

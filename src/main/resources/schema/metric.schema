@@ -5,7 +5,7 @@
 		"metric" : { "type" : "keyword" },
 		"evaluationDate" : { "type" : "date" },
 		
-		"factors" : { "type" : "keyword" },
+		"level2s" : { "type" : "keyword" },
 		"weights" : { "type" : "double" },
 		
 		"name" : { "type" : "keyword" },

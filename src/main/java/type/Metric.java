@@ -11,7 +11,7 @@ public class Metric extends IndexItem {
 			String metric,
 			String evaluationDate,
 			
-			String[] factors,
+			String[] level2s,
 			Double[] weights,
 			String name, 
 			String description,
@@ -26,7 +26,7 @@ public class Metric extends IndexItem {
 		this.id = metric;
 		this.evaluationDate = evaluationDate;
 		
-		this.parents = factors;
+		this.parents = level2s;
 		this.weights = weights;
 		
 		this.name = name;
@@ -54,12 +54,12 @@ public class Metric extends IndexItem {
 		this.id = metric;
 	}
 
-	public String[] getFactors() {
+	public String[] getLevel2s() {
 		return parents;
 	}
 
-	public void setFactors(String[] factors) {
-		this.parents = factors;
+	public void setLevel2s(String[] level2s) {
+		this.parents = level2s;
 	}
 
 	public Map<String, Object> getMap() {
@@ -69,7 +69,7 @@ public class Metric extends IndexItem {
 		result.put("project", project);
 		result.put("metric", id);
 		
-		result.put("factors", parents);
+		result.put("level2s", parents);
 		result.put("weights", weights);
 		
 		result.put("name", name);

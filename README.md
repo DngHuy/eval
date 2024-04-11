@@ -1,5 +1,5 @@
 # Q-Rapids eval ![](https://img.shields.io/badge/License-Apache2.0-blue.svg)
-Qrapids-eval computes metrics, factors, and indicators on raw data stored in Elasticsearch. In the q-rapids context, raw data is produced by a q-rapids kafka connectors (read from Jira, Sonarqube or other sources). Q-Rapids eval aggregates the raw data into metrics, and further on into factors and indicators, according to a defined quality model.
+Qrapids-eval computes metrics, level2s, and level3s on raw data stored in Elasticsearch. In the q-rapids context, raw data is produced by a q-rapids kafka connectors (read from Jira, Sonarqube or other sources). Q-Rapids eval aggregates the raw data into metrics, and further on into level2s and level3s, according to a defined quality model.
 
 ## Configuration
 Q-Rapids eval is a commandline tool and is configured via a set of text files (query- and property-files) that are stored in a special folder structure. The top-folder is named 'projects'. This folder has to be present in the same directory where the qrapids-eval.jar file is stored. Each subfolder defines a quality model for a project to be evaluated.
@@ -9,12 +9,12 @@ The folder structure shown below defines the evaluation of one project 'default'
 ```
 +---projects
     +---default
-    |   +---factors
-    |   |     factor.properties
-    |   |     factor.query
-    |   +---indicators
-    |   |     indicator.properties
-    |   |     indicator.query
+    |   +---level2s
+    |   |     level2.properties
+    |   |     level2.query
+    |   +---level3s
+    |   |     level3.properties
+    |   |     level3.query
     |   +---metrics
     |   |     comments.properties
     |   |     comments.query
@@ -28,8 +28,8 @@ The folder structure shown below defines the evaluation of one project 'default'
     |   |     02_filesInSnapshot.properties
     |   |     02_filesInSnapshot.query
     |   |
-    |   |  factors.properties
-    |   |  indicators.properties
+    |   |  level2s.properties
+    |   |  level3s.properties
     |   |  project.properties
     |
     |
@@ -44,22 +44,22 @@ dashboard.notification.url=http://<address>/QRapids-<version>/api/assessStrategi
 ```
 
 ### projects/default/project.properties
-The project.properties file contains the top-level configuration for a project evaluation. It defines the project.name (which will be appended to the metrics/factors/indicators/relations index names), the addresses to source and target Elasticsearch servers, the name and other properties of the source indexes(e.g. Sonarqube, Jira), and the names and types of the created (or reused) target indexes (metrics, factors, indicators, relations). 
+The project.properties file contains the top-level configuration for a project evaluation. It defines the project.name (which will be appended to the metrics/level2s/level3s/relations index names), the addresses to source and target Elasticsearch servers, the name and other properties of the source indexes(e.g. Sonarqube, Jira), and the names and types of the created (or reused) target indexes (metrics, level2s, level3s, relations). 
 
-**NEW** in this version of qr-eval is the configurable Error Handling. Error handling takes place when the computation of metrics, factors, or indicators fails. This can happen because of missing data, errors in formulas (e.g. division by 0) and for other reasons. The onError property allows to set a project-wide default (which can be overwritten for metrics, factors etc.) how to handle these errors.
-+ The 'drop' option just drops the metrics/factors/indicators item that can't be computed, no record is stored. 
+**NEW** in this version of qr-eval is the configurable Error Handling. Error handling takes place when the computation of metrics, level2s, or level3s fails. This can happen because of missing data, errors in formulas (e.g. division by 0) and for other reasons. The onError property allows to set a project-wide default (which can be overwritten for metrics, level2s etc.) how to handle these errors.
++ The 'drop' option just drops the metrics/level2s/level3s item that can't be computed, no record is stored. 
 + The 'set0' option stores a record with value 0.
 
 
 ```properties
 # project name
-# must be lowercase since it becomes part of the metrics/factors/indicators/relations index names, mandatory
+# must be lowercase since it becomes part of the metrics/level2s/level3s/relations index names, mandatory
 project.name=default
 
 # Elasticsearch source data, mandatory
 elasticsearch.source.ip=localhost
 
-# Elasticsearch target data (metrics, factors, indicators, relations, ...), mandatory
+# Elasticsearch target data (metrics, level2s, level3s, relations, ...), mandatory
 # Could be same as source
 elasticsearch.target.ip=localhost
 
@@ -85,22 +85,22 @@ sonarqube.issues.project=<your-sonarqube-project-key>
 metrics.index=metrics
 metrics.index.type=metrics
 
-# factors index, mandatory
-factors.index=factors
-factors.index.type=factors
+# level2s index, mandatory
+level2s.index=level2s
+level2s.index.type=level2s
 
 # impacts index, mandatory
 relations.index=relations
 relations.index.type=relations
 
-# factors index, mandatory
-indicators.index=indicators
-indicators.index.type=indicators
+# level2s index, mandatory
+level3s.index=level3s
+level3s.index.type=level3s
 
 # global error handling default: 'drop' or 'set0', default is 'drop'.
-# Error handling takes place when the computation of a metric/factor/indicator/relation fails.
+# Error handling takes place when the computation of a metric/level2/level3/relation fails.
 # Strategy 'drop' doesn't store the item, 'set0' sets the item's value to 0.
-# The setting can be overwritten for specific metrics, factors, and indicators
+# The setting can be overwritten for specific metrics, level2s, and level3s
 onError=set0
 ```
 
@@ -114,7 +114,7 @@ result.lastSnapshotDate=hits.hits[0]._source.snapshotDate
 
 
 ### projects/default/params
-In the first phase of a project evaluation, qr-eval executes the queries in the params folder (*params queries*). These do not compute metrics or factors, but allow for querying arbitrary other values (noted with prefix 'result., which then can be used in subsequent *params* and *metrics* queries as parameters. The results of params queries can be used in subsequent params and metrics queries without declaration in the associated property-files (unlike values of project.properties, where declaration is necessary)
+In the first phase of a project evaluation, qr-eval executes the queries in the params folder (*params queries*). These do not compute metrics or level2s, but allow for querying arbitrary other values (noted with prefix 'result., which then can be used in subsequent *params* and *metrics* queries as parameters. The results of params queries can be used in subsequent params and metrics queries without declaration in the associated property-files (unlike values of project.properties, where declaration is necessary)
 
 The *params* queries are executed in sequence (alphabetical order). For this reason, it is a good practice to follow the suggested naming scheme for parameter queries and start the name of with a sequence of numbers (e.g. 01_query_name, 02_other_name). Since params queries build on each other, a proper ordering is necessary.
 
@@ -206,7 +206,7 @@ The result of the query is specified as path in the returned json: __"hits" -> "
 ### projects/default/metrics
 The folder contains the metrics definitions of a project. As *params queries*, *metrics queries* consist of a pair of files, a .properties and a .query file. In addition to params queries, metrics queries compute a metric value defined by a formula. The computed metric value is stored in the metrics index (defined in project.properties) after query execution.
 
-Computed metrics get aggregated into factors. Therefore you have to specify the factors, a metric is going to influence. Metrics can influence one or more factors, that are supplied as a comma-separated list of factor-ids together with the weight describing the strength of the influence. In the example below, the metric 'complexity' influences two factors (codequality and other) with weights 2.0 for codequality and 1.0 for other. The value of a factor is then computed as a weighted sum of all metrics influencing a factor.
+Computed metrics get aggregated into level2s. Therefore you have to specify the level2s, a metric is going to influence. Metrics can influence one or more level2s, that are supplied as a comma-separated list of level2-ids together with the weight describing the strength of the influence. In the example below, the metric 'complexity' influences two level2s (codequality and other) with weights 2.0 for codequality and 1.0 for other. The value of a level2 is then computed as a weighted sum of all metrics influencing a level2.
 
 __Example: complexity query__
 
@@ -221,7 +221,7 @@ index=$$sonarqube.measures.index
 enabled=true
 name=Complexity
 description=Percentage of files that do not exceed a defined average complexity per function
-factors=codequality,other
+level2s=codequality,other
 weights=2.0,1.0
 
 # query parameter
@@ -309,32 +309,32 @@ The metric (percentage of files having tolerable complexity) is then computed as
 metric=complexity.good / ( complexity.good + complexity.bad ) = 53 / ( 53 + 0 ) = 100%
 ```
 
-### projects/default/factors.properties
-The factors.properties file defines factors to compute along with their properties. Factors don't do sophisticated computations, they serve as a point for the aggregation of metric values. Factors are then aggregated into indicators, so they have to specify the indicators they are influencing along with the weights of the influence. The notation used has to be read as *factorid.property=value* . 
+### projects/default/level2s.properties
+The level2s.properties file defines level2s to compute along with their properties. Factors don't do sophisticated computations, they serve as a point for the aggregation of metric values. Factors are then aggregated into level3s, so they have to specify the level3s they are influencing along with the weights of the influence. The notation used has to be read as *factorid.property=value* . 
 
 
-+ The *enabled* attribute enables/disables a factor (no records written for a factor when disabled)
-+ The *name* property supplies a user-friendly name of a factor 
-+ The *decription* attribute describes the intention of the factor
-+ The *indicators* attribute contains a list of influenced indicators (which are defined in a separate properties file).
-+ The *weights* attribute sets the strength of the influence. Obviously, the lists in 'indicators' and 'weights' have to have the same length!
-+ The *onError* attribute tells qr-eval what to do in case of factor computation errors (e.g. no metrics influence a factor, which results in a division by zero)
++ The *enabled* attribute enables/disables a level2 (no records written for a level2 when disabled)
++ The *name* property supplies a user-friendly name of a level2 
++ The *decription* attribute describes the intention of the level2
++ The *level3s* attribute contains a list of influenced level3s (which are defined in a separate properties file).
++ The *weights* attribute sets the strength of the influence. Obviously, the lists in 'level3s' and 'weights' have to have the same length!
++ The *onError* attribute tells qr-eval what to do in case of level2 computation errors (e.g. no metrics influence a level2, which results in a division by zero)
 
-Example factor definition (codequality):
+Example level2 definition (codequality):
 
 ```properties
 codequality.enabled=true
 codequality.name=Code Quality
 codequality.description=It measures the impact of code changes in source code quality. Specifically, ...
-codequality.indicators=productquality
+codequality.level3s=productquality
 codequality.weights=1.0
 codequality.onError=set0
 ```
 
 __Note:__ The onError property can be set to 'drop' or 'set0' and overwrites to setting in project.properties.
 
-### projects/default/indicators.properties
-The indicators.properties file defines the indicators for a project. The parents- and weights-attribute currently have no effect, but could define an additional level of aggregation in future. 
+### projects/default/level3s.properties
+The level3s.properties file defines the level3s for a project. The parents- and weights-attribute currently have no effect, but could define an additional level of aggregation in future. 
 
 ```properties
 productquality.enabled=true
@@ -344,11 +344,11 @@ productquality.parents=meta
 productquality.weights=1.0
 ```
 
-### projects/default/factors
-Defines the query for aggregation of metrics into factors, based on relations index. DON'T TOUCH, unless you know what you are doing.
+### projects/default/level2s
+Defines the query for aggregation of metrics into level2s, based on relations index. DON'T TOUCH, unless you know what you are doing.
 
-### projects/default/indicators
-Defines the query for aggregation of factors into indicators, based on relations index. DON'T TOUCH, unless you know what you are doing.
+### projects/default/level3s
+Defines the query for aggregation of level2s into level3s, based on relations index. DON'T TOUCH, unless you know what you are doing.
 
 
 
@@ -388,12 +388,12 @@ After build, you'll find the generated jar in the target folder
 
 ## Model validation
 Before the evaluation of a project starts, qrapids-eval performs a basic evaluation of the qualtity model. A warning is logged in the following cases:
-+ A metrics-query mentions a factor in the factors-property, but the factor isn't defined in the factors.properties file.
-+ A factor mentioned in a metric is not enabled
-+ A factor is defined in factors.properties, but not mentioned in any metrics-query
-+ An indicator is mentioned in the indicators-property of a defined factor, but is not defined in the indicators.properties file
-+ An indicator is mentioned in the indicators-property of a defined factor, but is not enabled
-+ An indicator is defined in indicators.properties, but it is not mentioned in any indicators-property of the defined factors
++ A metrics-query mentions a level2 in the level2s-property, but the level2 isn't defined in the level2s.properties file.
++ A level2 mentioned in a metric is not enabled
++ A level2 is defined in level2s.properties, but not mentioned in any metrics-query
++ An level3 is mentioned in the level3s-property of a defined level2, but is not defined in the level3s.properties file
++ An level3 is mentioned in the level3s-property of a defined level2, but is not enabled
++ An level3 is defined in level3s.properties, but it is not mentioned in any level3s-property of the defined level2s
 
 
 ## Built With

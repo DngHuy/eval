@@ -1,7 +1,6 @@
 package eval2;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.net.InetAddress;
@@ -23,7 +22,6 @@ import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.endpoints.BooleanResponse;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -40,11 +38,8 @@ import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import type.Factor;
-import type.IndexItem;
-import type.Indicator;
-import type.Metric;
-import type.Relation;
+import type.*;
+import type.Level2;
 import util.JsonPath;
 
 @ApplicationScoped
@@ -159,7 +154,7 @@ public class Elasticsearch {
 		    for ( Entry<String,String> e : queryResults.entrySet() ) {
 				JsonNode value = null;
 				Object o = null;
-				if (!queryDef.getName().equals("workdistribution") && !e.getKey().equals("distribution")) {
+				if (!e.getKey().equals("distribution")) {
 					value = JsonPath.getNode(node, e.getValue());
 					o = convert(value);
 				} else {
@@ -277,16 +272,16 @@ public class Elasticsearch {
 				projectProperties.getProperty("project.name"),
 				evaluationDate
 		);
-		
+
 		log.info("deleted " + deleted + " metrics (evaluationDate=" + evaluationDate + ")\n");
-		
-//		long deleted2 = deleteCurrentEvaluation(
-//				projectProperties.getProperty("relations.index"),
-//				projectProperties.getProperty("project.name"),
-//				evaluationDate
-//		);
-//
-//		log.info("deleted " + deleted2 + " relations (evaluationDate=" + evaluationDate + ")\n");
+
+		long deleted2 = deleteCurrentEvaluation(
+				projectProperties.getProperty("relations.index"),
+				projectProperties.getProperty("project.name"),
+				evaluationDate
+		);
+
+		log.info("deleted " + deleted2 + " relations (evaluationDate=" + evaluationDate + ")\n");
 		
 		BulkResponse br = writeBulk(evaluationDate, metricIndex, "metrics", metrics);
 		
@@ -308,40 +303,40 @@ public class Elasticsearch {
 	}
 	
 
-	public void storeFactors(Properties projectProperties, String evaluationDate, Collection<Factor> factors ) {
+	public void storeLevel2(Properties projectProperties, String evaluationDate, Collection<Level2> level2s) {
 		
-		String indexName = projectProperties.getProperty("factors.index");
+		String indexName = projectProperties.getProperty("level2.index");
 		
-		checkCreateIndex(  indexName, "schema/factor.schema", "factors" );
+		checkCreateIndex(  indexName, "schema/level2.schema", "level2" );
 		
 		long deleted = deleteCurrentEvaluation(
-				indexName, 
+				indexName,
 				projectProperties.getProperty("project.name"),
 				evaluationDate
 		);
+
+		log.info("deleted " + deleted + " level2 (evaluationDate=" + evaluationDate + ").\n");
 		
-		log.info("deleted " + deleted + " factors (evaluationDate=" + evaluationDate + ").\n");
-		
-		BulkResponse br = writeBulk(evaluationDate, indexName, "factors", factors);
+		BulkResponse br = writeBulk(evaluationDate, indexName, "level2", level2s);
 		
 		log.info( bulkResponseCheck(br) );
 		
 	}
 	
-	public void storeIndicators(Properties projectProperties, String evaluationDate, Collection<Indicator> indicators) {
-		String indexName = projectProperties.getProperty("indicators.index") + "." + projectProperties.getProperty("project.name");
+	public void storeLevel3(Properties projectProperties, String evaluationDate, Collection<Level3> level3s) {
+		String indexName = projectProperties.getProperty("level3.index") + "." + projectProperties.getProperty("project.name");
 		
-		checkCreateIndex(  indexName, "schema/indicator.schema", "indicators" );
-		
+		checkCreateIndex(  indexName, "schema/level3.schema", "level3" );
+
 		long deleted = deleteCurrentEvaluation(
-				indexName, 
+				indexName,
 				projectProperties.getProperty("project.name"),
 				evaluationDate
 		);
+
+		log.info("deleted " + deleted + " level3 (evaluationDate=" + evaluationDate + ").\n");
 		
-		log.info("deleted " + deleted + " indicators (evaluationDate=" + evaluationDate + ").\n");
-		
-		BulkResponse br = writeBulk(evaluationDate, indexName, "indicators", indicators);
+		BulkResponse br = writeBulk(evaluationDate, indexName, "level3", level3s);
 		
 		log.info( bulkResponseCheck(br) );
 		

@@ -3,16 +3,16 @@ package type;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Indicator extends IndexItem {
+public class Level2 extends IndexItem {
 	
-	public Indicator( 
+	public Level2(
 			
 			Boolean enabled,
 			String project,
-			String indicator,
+			String level2,
 			String evaluationDate,
 			
-			String [] parents,
+			String [] level3s,
 			Double [] weights,
 			
 			String name, 
@@ -20,7 +20,6 @@ public class Indicator extends IndexItem {
 			String datasource,
 			Double value,
 			String info,
-			
 			String onError
 			
 		) { 
@@ -28,10 +27,10 @@ public class Indicator extends IndexItem {
 		this.enabled = enabled;
 		
 		this.project  = project;
-		this.id = indicator;
+		this.id = level2;
 		this.evaluationDate = evaluationDate;
 		
-		this.parents = parents;
+		this.parents = level3s;
 		this.weights = weights;
 		
 		this.name = name;
@@ -47,23 +46,31 @@ public class Indicator extends IndexItem {
 	
 	@Override
 	public String getType() {
-		return "indicators";
+		return "factors";
+	}
+	
+	public Boolean getEnabled() {
+		return enabled;
 	}
 
-	public String getIndicator() {
+	public void setEnabled(Boolean enabled) {
+		this.enabled = enabled;
+	}
+
+	public String getLevel2() {
 		return id;
 	}
 
-	public void setFactor(String factor) {
+	public void setLevel2(String factor) {
 		this.id = factor;
 	}
 
-	public String[] getIndicators() {
+	public String[] getLevel3s() {
 		return parents;
 	}
 
-	public void setIndicators(String[] indicators) {
-		this.parents = indicators;
+	public void setLevel3s(String[] level3s) {
+		this.parents = level3s;
 	}
 
 	public Map<String, Object> getMap() {
@@ -71,10 +78,10 @@ public class Indicator extends IndexItem {
 		Map<String, Object> result = new HashMap<String, Object>();
 		
 		result.put("project", project);
-		result.put("indicator", id);
+		result.put("level2", id);
 		result.put("evaluationDate", evaluationDate);
 		
-		result.put("parents", parents);
+		result.put("level3s", parents);
 		result.put("weights", weights);
 		
 		result.put("name", name);

@@ -12,11 +12,8 @@ import java.util.Map.Entry;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import type.Factor;
-import type.IndexItem;
-import type.Indicator;
-import type.Metric;
-import type.Relation;
+import type.*;
+import type.Level2;
 
 import java.util.Properties;
 import java.util.Set;
@@ -85,7 +82,7 @@ public class EvalProject {
 		File metricQueryFolder = new File( projectFolder.getAbsolutePath() + File.separatorChar + "metrics" );
 		metricQuerySet = getQuerySet( metricQueryFolder ); 
 		
-		ModelChecker.check( metricQuerySet, readFactorMap(), readIndicatorMap() );
+		ModelChecker.check( metricQuerySet, readLevel2Map(), readLevel3Map() );
 		
 	}
 	
@@ -120,11 +117,11 @@ public class EvalProject {
 		log.info("Storing metric relations (" + metricRelations.size() + " computed)\n");
 		elasticTarget.storeRelations( projectProperties, evaluationDate, metricRelations );
 
-		log.info("Computing Factors ...\n");
-		Collection<Factor> factors = computeFactors();
+		log.info("Computing Level2 ...\n");
+		Collection<Level2> level2s = computeLevel2();
 
-		log.info("Storing factors (" + factors.size() + " computed)\n");
-		elasticTarget.storeFactors( projectProperties, evaluationDate, factors );
+		log.info("Storing Level2 (" + level2s.size() + " computed)\n");
+		elasticTarget.storeLevel2( projectProperties, evaluationDate, level2s);
 		/*
 		log.info("Storing factor relations ... \n");
 		List<Relation> factorrelations = computeFactorRelations(factors);
@@ -132,37 +129,37 @@ public class EvalProject {
 
 		// try { Thread.sleep(1000); } catch (InterruptedException e) { e.printStackTrace(); }
 		
-		log.info("Computing Indicators  ...\n");
-		Collection<Indicator> indicators = computeIndicators();
+		log.info("Computing Level3  ...\n");
+		Collection<Level3> level3s = computeLevel3();
 		
-		elasticTarget.storeIndicators( projectProperties, evaluationDate, indicators );
+		elasticTarget.storeLevel3( projectProperties, evaluationDate, level3s );
 		*/
 	}
 	
 
 	/**
 	 * Computes Factor values based on relation items
-	 * @return List of computed Factors
+	 * @return List of computed Level2
 	 */
-	private Collection<Factor> computeFactors() {
+	private Collection<Level2> computeLevel2() {
 		
-		List<Factor> result = new ArrayList<>();
+		List<Level2> result = new ArrayList<>();
 		
-		String factorQueryDir = projectFolder.getAbsolutePath() + File.separatorChar + "factors";
-		QueryDef factorQuery = loadQueryDef(factorQueryDir, "factor");
-		factorQuery.setIndex( factorQuery.getProperty("index"));
+		String level2QueryDir = projectFolder.getAbsolutePath() + File.separatorChar + "level2";
+		QueryDef level2Query = loadQueryDef(level2QueryDir, "level2");
+		level2Query.setIndex( level2Query.getProperty("index"));
 		
-		Map<String,Factor> factorMap = readFactorMap();
+		Map<String, Level2> factorMap = readLevel2Map();
 		
-		for ( Entry<String,Factor> e : factorMap.entrySet() ) {
+		for ( Entry<String, Level2> e : factorMap.entrySet() ) {
 			
-			Factor fact = e.getValue();
+			Level2 fact = e.getValue();
 			
 			if ( !fact.isEnabled() ) {
-				log.info("Factor " + fact.getFactor() + " is disabled.\n");
+				log.info("Factor " + fact.getLevel2() + " is disabled.\n");
 				continue;
 			} else {
-				log.info("Computing factor  " + fact.getFactor() + ".\n") ; 
+				log.info("Computing factor  " + fact.getLevel2() + ".\n") ;
 			}
 
 			Map<String,Object> parameters = new HashMap<>();
@@ -171,52 +168,52 @@ public class EvalProject {
 			parameters.put( "targetType", e.getValue().getType() );
 			parameters.put( "targetId", e.getValue().getElasticId() ); 
 			
-			Map<String,Object> results = elasticTarget.execute(parameters, factorQuery);
-			String metricDef = factorQuery.getProperty("metric");
+			Map<String,Object> results = elasticTarget.execute(parameters, level2Query);
+			String metricDef = level2Query.getProperty("metric");
 
 
-			Double factorValue=null;
+			Double level2Value=null;
 			try {
-				factorValue = evaluate( metricDef, results );
+				level2Value = evaluate( metricDef, results );
 			} catch( RuntimeException rte ) {
 				
 				log.warning("Evaluation of formula " + metricDef + " failed. \nFactor: " + fact.getName() + "\n");
 
 				if ( fact.onErrorSet0() ) {
-					log.warning("Factor " + fact.getFactor() + " set to 0.\n");
-					factorValue = 0.0;
+					log.warning("Factor " + fact.getLevel2() + " set to 0.\n");
+					level2Value = 0.0;
 				} else {
-					log.warning("Factor " + fact.getFactor() + " is dropped.\n");
+					log.warning("Factor " + fact.getLevel2() + " is dropped.\n");
 					continue;
 				}
 
 			}
 				
-			// factorValue not numeric?
-			if ( factorValue.isNaN() || factorValue.isInfinite() ) {
+			// level2Value not numeric?
+			if ( level2Value.isNaN() || level2Value.isInfinite() ) {
 				
-				log.warning("Evaluation of Factor " + fact.getFactor() + " resulted in non-numeric value.\n" );
+				log.warning("Evaluation of Factor " + fact.getLevel2() + " resulted in non-numeric value.\n" );
 				
 				if ( fact.onErrorSet0() ) {
-					log.warning("Factor " + fact.getFactor() + " set to 0.\n");
-					factorValue = 0.0;
+					log.warning("Factor " + fact.getLevel2() + " set to 0.\n");
+					level2Value = 0.0;
 				} else {
-					log.warning("Factor " + fact.getFactor() + " is dropped.\n");
+					log.warning("Factor " + fact.getLevel2() + " is dropped.\n");
 					continue;
 				}
 			} else {
-				log.info("Value of factor " + fact.getFactor() + " = " + factorValue + "\n");
+				log.info("Value of factor " + fact.getLevel2() + " = " + level2Value + "\n");
 			}
 			
-			fact.setValue(factorValue);
+			fact.setValue(level2Value);
 			fact.setEvaluationDate(evaluationDate);
 			
 			String info;
 			info = "parameters: " + parameters.toString() + "\n";
-			info += "query-properties: " + factorQuery.getQueryParameter().toString() + "\n";
+			info += "query-properties: " + level2Query.getQueryParameter().toString() + "\n";
 			info += "executionResults: " + results.toString() + "\n";
 			info += "formula: " + metricDef + "\n";
-			info += "value: " + factorValue;
+			info += "value: " + level2Value;
 
 			fact.setInfo(info);
 			
@@ -229,33 +226,33 @@ public class EvalProject {
 	}
 	
 	/**
-	 * Compute Relations between Factors and Indicators
-	 * @param factors 
+	 * Compute Relations between Level2 and Level 3s
+	 * @param level2s
 	 * @return List of Relation
 	 */
-	private List<Relation> computeFactorRelations( Collection<Factor> factors ) {
+	private List<Relation> computeFactorRelations( Collection<Level2> level2s) {
 		
 		List<Relation> result = new ArrayList<>();
 		
-		Map<String,Indicator> indicatorMap = readIndicatorMap();
+		Map<String, Level3> level3Map = readLevel3Map();
 		
-		for ( Factor factor : factors ) {
-			for ( int i = 0; i < factor.getIndicators().length; i++ ) {
+		for ( Level2 level2 : level2s) {
+			for (int i = 0; i < level2.getLevel3s().length; i++ ) {
 				
-				String indicatorid = factor.getIndicators()[i];
-				Double weight = factor.getWeights()[i];
+				String level3Id = level2.getLevel3s()[i];
+				Double weight = level2.getWeights()[i];
 
-				Indicator indicator = indicatorMap.get(indicatorid);
+				Level3 level3 = level3Map.get(level3Id);
 				
-				if ( indicator == null ) {
-					log.info( "Warning: Impact of Factor " + factor.getName() + " on undefined Indicator " + indicatorid + "is not stored."  );
+				if ( level3 == null ) {
+					log.info( "Warning: Impact of Level 2 " + level2.getName() + " on undefined Level 3 " + level3Id + "is not stored."  );
 				} else {
-					if ( !indicator.isEnabled() ) {
-						log.info("Indicator " + indicator.getName() + " is disabled. No relation created.\n");
+					if ( !level3.isEnabled() ) {
+						log.info("Level 3 " + level3.getName() + " is disabled. No relation created.\n");
 						continue;
 					}
 					
-					Relation imp = new Relation(factor.getProject(), factor, indicator, evaluationDate, factor.getValue() * weight, weight);
+					Relation imp = new Relation(level2.getProject(), level2, level3, evaluationDate, level2.getValue() * weight, weight);
 					result.add(imp);
 				}
 				
@@ -268,28 +265,28 @@ public class EvalProject {
 	}
 	
 	/**
-	 * Compute Indicator values based on Factor-indicator relations
-	 * @return List of Indicator
+	 * Compute Level 3 values based on Level2-Level3 relations
+	 * @return List of Level 3
 	 */
-	private Collection<Indicator> computeIndicators() {
+	private Collection<Level3> computeLevel3() {
 		
-		List<Indicator> result = new ArrayList<>();
+		List<Level3> result = new ArrayList<>();
 		
-		String indicatorQueryDir = projectFolder.getAbsolutePath() + File.separatorChar + "indicators";
-		QueryDef indicatorQuery = loadQueryDef(indicatorQueryDir, "indicator");
-		indicatorQuery.setIndex(indicatorQuery.getProperty("index") + "." + projectProperties.getProperty("project.name"));
+		String level3QueryDir = projectFolder.getAbsolutePath() + File.separatorChar + "level3";
+		QueryDef level3Query = loadQueryDef(level3QueryDir, "level3");
+		level3Query.setIndex(level3Query.getProperty("index") + "." + projectProperties.getProperty("project.name"));
 		 
-		Map<String,Indicator> indicatorMap = readIndicatorMap();
+		Map<String, Level3> level3Map = readLevel3Map();
 		
-		for ( Entry<String,Indicator> e : indicatorMap.entrySet() ) {
+		for ( Entry<String, Level3> e : level3Map.entrySet() ) {
 			
-			Indicator ind = e.getValue();
+			Level3 l3 = e.getValue();
 			
-			if ( !ind.isEnabled() ) {
-				log.info("Indicator " + ind.getIndicator() + " is disabled.\n");
+			if ( !l3.isEnabled() ) {
+				log.info("Level 3 " + l3.getLevel3() + " is disabled.\n");
 				continue;
 			} else {
-				log.info("Computing indicator " + ind.getIndicator() + ".\n") ; 
+				log.info("Computing level 3 " + l3.getLevel3() + ".\n") ;
 			}
 			
 			Map<String,Object> parameters = new HashMap<>();
@@ -298,51 +295,51 @@ public class EvalProject {
 			parameters.put( "targetType", e.getValue().getType() );
 			parameters.put( "targetId", e.getValue().getElasticId() ); 
 			
-			Map<String,Object> results = elasticTarget.execute(parameters, indicatorQuery);
-			String metricDef = indicatorQuery.getProperty( "metric" );
+			Map<String,Object> results = elasticTarget.execute(parameters, level3Query);
+			String metricDef = level3Query.getProperty( "metric" );
 
-			Double indicatorValue;
+			Double level3Value;
 			try {
-				indicatorValue = evaluate( metricDef, results );
+				level3Value = evaluate( metricDef, results );
 			} catch (RuntimeException rte) {
 
-				log.warning("Evaluation of formula " + metricDef + " failed.\nIndicator: " + ind.getName());
+				log.warning("Evaluation of formula " + metricDef + " failed.\nLevel 3: " + l3.getName());
 
-				if ( ind.onErrorSet0() ) {
-					log.warning("Indicator " + ind.getName() + " set to 0.\n");
-					indicatorValue = 0.0;
+				if ( l3.onErrorSet0() ) {
+					log.warning("Level 3 " + l3.getName() + " set to 0.\n");
+					level3Value = 0.0;
 				} else {
-					log.warning("Indicator " + ind.getName() + " is dropped.\n");
+					log.warning("Level 3 " + l3.getName() + " is dropped.\n");
 					continue;
 				}
 				
 			}
 
-			if ( indicatorValue.isNaN() || indicatorValue.isInfinite() ) {
-				if ( ind.onErrorSet0() ) {
-					log.warning("Indicator " + ind.getName() + " set to 0.\n");
-					indicatorValue = 0.0;
+			if ( level3Value.isNaN() || level3Value.isInfinite() ) {
+				if ( l3.onErrorSet0() ) {
+					log.warning("Level 3 " + l3.getName() + " set to 0.\n");
+					level3Value = 0.0;
 				} else {
-					log.warning("Indicator " + ind.getName() + " is dropped.\n");
+					log.warning("Level 3 " + l3.getName() + " is dropped.\n");
 					continue;
 				}
 			} else {
-				log.info("Value of indicator " + ind.getIndicator() + " = " + indicatorValue + "\n");
+				log.info("Value of Level 3 " + l3.getLevel3() + " = " + level3Value + "\n");
 			}
 			
-			ind.setValue(indicatorValue);
-			ind.setEvaluationDate(evaluationDate);
+			l3.setValue(level3Value);
+			l3.setEvaluationDate(evaluationDate);
 			
 			String info;
 			info = "parameters: " + parameters.toString() + "\n";
-			info += "query-properties: " + indicatorQuery.getQueryParameter().toString() + "\n";
+			info += "query-properties: " + level3Query.getQueryParameter().toString() + "\n";
 			info += "executionResults: " + results.toString() + "\n";
 			info += "formula: " + metricDef + "\n";
-			info += "value: " + indicatorValue;
+			info += "value: " + level3Value;
 
-			ind.setInfo(info);
+			l3.setInfo(info);
 			
-			result.add(ind);
+			result.add(l3);
 		}
 		
 		return result;
@@ -445,7 +442,7 @@ public class EvalProject {
 			String metric = metricQueryDef.getName();
 			String name = metricQueryDef.getProperty("name");
 			String description = metricQueryDef.getProperty("description");
-			String[] factors = metricQueryDef.getPropertyAsStringArray("factors");
+			String[] level2s = metricQueryDef.getPropertyAsStringArray("level2");
 			Double[] weights = metricQueryDef.getPropertyAsDoubleArray("weights");
 			String datasource = elasticSource.getElasticsearchIP() + ":9200/" + metricQueryDef.getProperty("index");
 		
@@ -454,7 +451,7 @@ public class EvalProject {
 				onError = projectErrorStrategy;
 			}
 		
-			Metric m = new Metric(project, metric, evaluationDate, factors, weights, name, description, datasource, metricValue, info, onError );
+			Metric m = new Metric(project, metric, evaluationDate, level2s, weights, name, description, datasource, metricValue, info, onError );
 			result.add(m);
 			
 		}
@@ -476,7 +473,7 @@ public class EvalProject {
 	}
 	
 	/**
-	 * Compute relations between (enabled) Metrics and Factors
+	 * Compute relations between (enabled) Metrics and Level 2
 	 * @param metrics List of Level 1 Metrics
 	 * @return List of Relation
 	 */
@@ -484,25 +481,25 @@ public class EvalProject {
 		
 		List<Relation> result = new ArrayList<>();
 		
-		Map<String,Factor> factorMap = readFactorMap();
+		Map<String, Level2> factorMap = readLevel2Map();
 		
 		for ( Metric metric : metrics ) {
-			for ( int i = 0; i < metric.getFactors().length; i++ ) {
+			for (int i = 0; i < metric.getLevel2s().length; i++ ) {
 				
-				String factorId = metric.getFactors()[i];
+				String factorId = metric.getLevel2s()[i];
 				Double weight = metric.getWeights()[i];
 
-				Factor factor = factorMap.get(factorId);
+				Level2 level2 = factorMap.get(factorId);
 				
-				if ( factor == null ) {
-					log.info( "Warning: Impact of Metric " + metric.getName() + " on undefined Factor " + factor + "is not stored."  );
+				if ( level2 == null ) {
+					log.info( "Warning: Impact of Metric " + metric.getName() + " on undefined Factor " + level2 + "is not stored."  );
 				} else {
-					if ( !factor.isEnabled() ) {
-						log.info("Factor " + factor.getName() + " is disabled. No relation created.\n");
+					if ( !level2.isEnabled() ) {
+						log.info("Factor " + level2.getName() + " is disabled. No relation created.\n");
 						continue;
 					}
 					
-					Relation imp = new Relation(metric.getProject(), metric, factor, evaluationDate, metric.getValue() * weight, weight);
+					Relation imp = new Relation(metric.getProject(), metric, level2, evaluationDate, metric.getValue() * weight, weight);
 					result.add(imp);
 				}
 			}
@@ -513,41 +510,41 @@ public class EvalProject {
 	}
 
 	/**
-	 * Read Map of Factors (id->Factor) from factors.properties file
-	 * @return Map of Factors
+	 * Read Map of Level 2 (id->level2) from level2.properties file
+	 * @return Map of Level 2
 	 */
-	private Map<String, Factor> readFactorMap() {
+	private Map<String, Level2> readLevel2Map() {
 		
 		
-		Map<String,Factor> result = new HashMap<>();
+		Map<String, Level2> result = new HashMap<>();
 		
-		File factorPropFile = new File( projectFolder.getAbsolutePath() + File.separatorChar + "factors.properties" );
+		File factorPropFile = new File( projectFolder.getAbsolutePath() + File.separatorChar + "level2.properties" );
 		
-		Properties factorProperties = FileUtils.loadProperties(factorPropFile);
-		List<String> factors = getFactors( factorProperties );
+		Properties level2Properties = FileUtils.loadProperties(factorPropFile);
+		List<String> level2s = getLevel2s( level2Properties );
 		
-		for ( String f : factors ) {
+		for ( String f : level2s ) {
 			
-			Boolean enabled = Boolean.parseBoolean(  factorProperties.getProperty(f + ".enabled") );
+			Boolean enabled = Boolean.parseBoolean(  level2Properties.getProperty(f + ".enabled") );
 			String project = projectProperties.getProperty("project.name");
 
-			String[] indicators = factorProperties.getProperty(f + ".indicators").split(",");
-			Double[] weights = getAsDoubleArray( factorProperties.getProperty(f + ".weights") );
+			String[] level3s = level2Properties.getProperty(f + ".level3").split(",");
+			Double[] weights = getAsDoubleArray( level2Properties.getProperty(f + ".weights") );
 			
-			String name = factorProperties.getProperty(f + ".name");
-			String description = factorProperties.getProperty(f + ".description");
+			String name = level2Properties.getProperty(f + ".name");
+			String description = level2Properties.getProperty(f + ".description");
 			String datasource = null;
 			
 			Double value = null;
 			String info = null;
 			
-			String onError = factorProperties.getProperty(f + ".onError");
+			String onError = level2Properties.getProperty(f + ".onError");
 			
 			if ( onError == null ) {
 				onError = projectErrorStrategy;
 			}
 
-			Factor fact = new Factor(enabled, project, f, evaluationDate, indicators, weights, name, description, datasource, value, info, onError );
+			Level2 fact = new Level2(enabled, project, f, evaluationDate, level3s, weights, name, description, datasource, value, info, onError );
 			result.put(f, fact);
 			
 		}
@@ -557,41 +554,41 @@ public class EvalProject {
 	}
 	
 	/**
-	 * Read Indicators from indicators.properties file
+	 * Read Level 3 from level3.properties file
 	 * @return
 	 */
-	private Map<String, Indicator> readIndicatorMap() {
+	private Map<String, Level3> readLevel3Map() {
 		
-		Map<String,Indicator> result = new HashMap<>();
+		Map<String, Level3> result = new HashMap<>();
 		
-		File indicatorPropFile = new File( projectFolder.getAbsolutePath() + File.separatorChar + "indicators.properties" );
+		File level3PropFile = new File( projectFolder.getAbsolutePath() + File.separatorChar + "level3.properties" );
 		
-		Properties indicatorProperties = FileUtils.loadProperties(indicatorPropFile);
-		List<String> indicators = getFactors( indicatorProperties );
+		Properties level3Properties = FileUtils.loadProperties(level3PropFile);
+		List<String> level3s = getLevel2s( level3Properties );
 		
-		for ( String indicator : indicators ) {
+		for ( String level3 : level3s ) {
 			
-			Boolean enabled = Boolean.parseBoolean(  indicatorProperties.getProperty(indicator + ".enabled") );
+			Boolean enabled = Boolean.parseBoolean(  level3Properties.getProperty(level3 + ".enabled") );
 			String project = projectProperties.getProperty("project.name");
 
-			String[] parents = indicatorProperties.getProperty(indicator + ".parents").split(",");
-			Double[] weights = getAsDoubleArray( indicatorProperties.getProperty(indicator + ".weights") );
+			String[] parents = level3Properties.getProperty(level3 + ".parents").split(",");
+			Double[] weights = getAsDoubleArray( level3Properties.getProperty(level3 + ".weights") );
 			
-			String name = indicatorProperties.getProperty(indicator + ".name");
-			String description = indicatorProperties.getProperty(indicator + ".description");
+			String name = level3Properties.getProperty(level3 + ".name");
+			String description = level3Properties.getProperty(level3 + ".description");
 			String datasource = null;
 			
 			Double value = null;
 			String info = null;
 			
-			String onError = indicatorProperties.getProperty(indicator + ".onError");
+			String onError = level3Properties.getProperty(level3 + ".onError");
 			
 			if ( onError == null ) {
 				onError = projectErrorStrategy;
 			}
 
-			Indicator ind = new Indicator(enabled, project, indicator, evaluationDate, parents, weights, name, description, datasource, value, info, onError );
-			result.put(indicator, ind);
+			Level3 ind = new Level3(enabled, project, level3, evaluationDate, parents, weights, name, description, datasource, value, info, onError );
+			result.put(level3, ind);
 			
 		}
 		
@@ -600,11 +597,11 @@ public class EvalProject {
 	}
 	
 	/**
-	 * Read List of Factors ids from factors.properties file
+	 * Read List of Level 2 ids from level2.properties file
 	 * @param props
 	 * @return
 	 */
-	private List<String> getFactors( Properties props ) {
+	private List<String> getLevel2s(Properties props ) {
 		
 		List<String> result = new ArrayList<String>();
 				

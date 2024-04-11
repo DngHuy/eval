@@ -2,7 +2,7 @@
       "properties": {
       
         "project" : { "type": "keyword" },
-        "indicator" : { "type": "keyword" },
+        "level3" : { "type": "keyword" },
 		"evaluationDate" : { "type" : "date" },
 		
         "parents" : { "type" : "keyword" },

@@ -2,10 +2,10 @@
       "properties": {
       
         "project" : { "type": "keyword" },
-        "factor" : { "type": "keyword" },
+        "level2" : { "type": "keyword" },
 		"evaluationDate" : { "type" : "date" },
 		
-        "indicators" : { "type" : "keyword" },
+        "level3s" : { "type" : "keyword" },
         "weights" : { "type": "double" },
         
         "name" : { "type": "keyword" },

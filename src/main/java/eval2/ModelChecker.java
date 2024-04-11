@@ -4,69 +4,69 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import type.Factor;
-import type.Indicator;
+import type.Level2;
+import type.Level3;
 
 public class ModelChecker {
 	public static Logger log = Logger.getLogger("eval2.ModelChecker");
 	
-	public static void check(Map<String,QueryDef> metricQueries, Map<String, Factor> factorMap, Map<String, type.Indicator> indicatorMap) {
+	public static void check(Map<String,QueryDef> metricQueries, Map<String, Level2> level2Map, Map<String, Level3> indicatorMap) {
 		
 		Set<String> allInfluencedFactors = new HashSet<>();
 		
-		// Factors referenced in <metric>.properties are defined in factor.properties
+		// Factors referenced in <metric>.properties are defined in level2.properties
 		for ( QueryDef qd : metricQueries.values() ) {
 			
 			if ( !qd.isEnabled() ) continue;
 			
-			String[] influencedFactors = qd.getPropertyAsStringArray("factors");
+			String[] influencedFactors = qd.getPropertyAsStringArray("level2");
 			for ( String f : influencedFactors ) {
 				allInfluencedFactors.add(f);
-				if ( !factorMap.containsKey(f)) {
-					log.warning( "Factor " + f + " is influenced by Metric " + qd.getName() + " but not defined in factor.properties.\n" );
+				if ( !level2Map.containsKey(f)) {
+					log.warning( "Level 2 " + f + " is influenced by Metric " + qd.getName() + " but not defined in level2.properties.\n" );
 				} else {
-					Factor fact = factorMap.get(f);
+					Level2 fact = level2Map.get(f);
 					if ( !fact.isEnabled() ) {
-						log.warning( "Factor " + f + " is influenced by Metric " + qd.getName() + " but is not enabled in factor.properties.\n" );
+						log.warning( "Level 2 " + f + " is influenced by Metric " + qd.getName() + " but is not enabled in level2.properties.\n" );
 					}
 				}
 			}
 		}
 		
-		// for each factor defined in factor.properties
+		// for each factor defined in level2.properties
 		// check, that it is influenced by a metric (factor is listed under 'factors' in metric.properties)
-		for ( String f : factorMap.keySet() ) {
+		for ( String f : level2Map.keySet() ) {
 			
-			if ( !factorMap.get(f).isEnabled() ) continue;
+			if ( !level2Map.get(f).isEnabled() ) continue;
 			
 			if ( !allInfluencedFactors.contains(f) ) {
-				log.warning("Factor " + f + " is defined in factor.properties but not influenced by any Metric.\n");
+				log.warning("Level 2 " + f + " is defined in level2.properties but not influenced by any Metric.\n");
 			}
 		}
 		
-		// indicators referenced in factor.properties are defined in indicator.properties
-		Set<String> allinfluencedIndicators = new HashSet<>();
-		for ( Factor f : factorMap.values() ) {
+		// indicators referenced in level2.properties are defined in level3.properties
+		Set<String> allinfluencedLevel3 = new HashSet<>();
+		for ( Level2 f : level2Map.values() ) {
 			if ( !f.isEnabled() ) continue;
-			for ( String i : f.getIndicators() ) {
-				allinfluencedIndicators.add(i);
+			for ( String i : f.getLevel3s() ) {
+				allinfluencedLevel3.add(i);
 				if ( !indicatorMap.containsKey(i) ) {
-					log.warning("Indicator " + i + " is influenced by Factor " + f.getFactor() + " but not defined in indicator.properties.\n");
+					log.warning("Level 3 " + i + " is influenced by Level 2 " + f.getLevel2() + " but not defined in level3.properties.\n");
 				} else {
 					if ( !indicatorMap.get(i).isEnabled() ) {
-						log.warning( "Indicator " + i + " is influenced by Factor " + f.getFactor() + " but is not enabled in indicator.properties.\n" );
+						log.warning( "Level 3 " + i + " is influenced by Level 2 " + f.getLevel2() + " but is not enabled in level3.properties.\n" );
 					}
 				}
 			}
 		}
 		
-		// for each indicator defined in indicator.properties
-		// check, that it is influenced by a factor (indicator is listed under 'indicators' in factor.properties)
+		// for each indicator defined in level3.properties
+		// check, that it is influenced by a factor (indicator is listed under 'indicators' in level2.properties)
 		for ( String i : indicatorMap.keySet() ) {
 			if ( !indicatorMap.get(i).isEnabled() ) continue;
 			
-			if ( !allinfluencedIndicators.contains(i) ) {
-				log.warning("Indicator " + i + " is defined in indicator.properties but not influenced by any Factor defined in factor.properties.\n");
+			if ( !allinfluencedLevel3.contains(i) ) {
+				log.warning("Level 3 " + i + " is defined in level3.properties but not influenced by any Factor defined in level2.properties.\n");
 			}
 		}
 		

@@ -42,11 +42,6 @@ public class IndexManager {
 		putMappingRequestBuilder.withJson(new StringReader(schema));
 		PutMappingRequest putMappingRequest = putMappingRequestBuilder.build();
 		es.getEsClient().indices().putMapping(putMappingRequest);
-
-//		indicesAdminClient.prepareCreate(indexName)
-//			.addMapping( mappingType , schema, XContentType.JSON )
-//			.get();
-		
 	}
 
 
