@@ -4,8 +4,12 @@
     "bool": {
       "must": [
         { "term": { "projectName.keyword": { "value": "{{project}}", "case_insensitive": true } } }
-        { "term": { "iterationState.keyword": { "value": "CURRENT" } } }
-      ]
+        { "term": { "labels": { "value": "CURRENT", "case_insensitive": true} } }
+      ],
+      "should" : [
+        { "term": { "iterationState.keyword": { "value": "CURRENT", "case_insensitive": true } } }
+      ],
+      "minimum_should_match": 0
     }
   },
   "aggs": {
