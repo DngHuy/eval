@@ -3,8 +3,8 @@
   "query": {
       "bool": {
         "must": [
-          { "term" : { "snapshot_date" : "{{evaluationDate}}" } },
-          { "term": { "project_name.keyword": { "value": "{{project}}", "case_insensitive": true } } }
+          { "term" : { "snapshotDate" : "{{evaluationDate}}" } },
+          { "term": { "projectName.keyword": { "value": "{{project}}", "case_insensitive": true } } }
         ]
       }
     },

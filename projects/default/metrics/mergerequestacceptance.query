@@ -3,20 +3,22 @@
     "query": {
         "bool": {
             "must": [
-                { "term": { "project_name.keyword": { "value": "{{project}}", "case_insensitive": true } } }
+                { "term": { "projectName.keyword": { "value": "{{project}}", "case_insensitive": true } } }
             ]
         }
     },
     "aggs":{
         "total_docs":{
             "cardinality":{
-            "field":"id"
+            "field": "id.keyword"
             }
         },
         "merged_docs":{
            "filter":{
-              "term":{
-                 "state.keyword":"merged"
+              "term": {
+                "state.keyword": {
+                  "value": "merged"
+                }
               }
            },
            "aggs":{

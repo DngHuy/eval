@@ -3,7 +3,7 @@
   "query": {
     "bool": {
       "must" : [
-        { "term": { "project_name.keyword": { "value": "{{project}}", "case_insensitive": true } } }
+        { "term": { "projectName.keyword": { "value": "{{project}}", "case_insensitive": true } } }
       ]
     }
   },

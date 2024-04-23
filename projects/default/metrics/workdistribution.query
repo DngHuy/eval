@@ -5,7 +5,7 @@
          "must":[
             {
                "term":{
-                  "project_name.keyword":{
+                  "projectName.keyword":{
                      "value":"{{project}}",
                      "case_insensitive":true
                   }
@@ -29,12 +29,12 @@
       },
       "users":{
          "terms":{
-            "field":"closed_by.keyword"
+            "field":"closedBy.keyword"
          },
          "aggs":{
             "closed_by_count":{
                "value_count":{
-                  "field":"closed_by.keyword"
+                  "field":"closedBy.keyword"
                }
             }
          }
