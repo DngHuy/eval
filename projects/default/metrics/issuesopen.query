@@ -4,7 +4,7 @@
     "bool": {
       "must": [
         { "term": { "projectName.keyword": { "value": "{{project}}", "case_insensitive": true } } },
-        { "term": { "labels": { "value": "CURRENT", "case_insensitive": true} } }
+        { "term": { "labels": { "value": "SPRINT", "case_insensitive": true} } }
       ],
       "should" : [
         { "term": { "iterationState.keyword": { "value": "CURRENT", "case_insensitive": true } } }
