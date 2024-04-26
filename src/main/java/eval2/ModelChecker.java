@@ -3,7 +3,7 @@ package eval2;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
+import org.jboss.logging.Logger;
 import type.Level2;
 import type.Level3;
 
@@ -23,11 +23,11 @@ public class ModelChecker {
 			for ( String f : influencedFactors ) {
 				allInfluencedFactors.add(f);
 				if ( !level2Map.containsKey(f)) {
-					log.warning( "Level 2 " + f + " is influenced by Metric " + qd.getName() + " but not defined in level2.properties.\n" );
+					log.warn( "Level 2 " + f + " is influenced by Metric " + qd.getName() + " but not defined in level2.properties.\n" );
 				} else {
 					Level2 fact = level2Map.get(f);
 					if ( !fact.isEnabled() ) {
-						log.warning( "Level 2 " + f + " is influenced by Metric " + qd.getName() + " but is not enabled in level2.properties.\n" );
+						log.warn( "Level 2 " + f + " is influenced by Metric " + qd.getName() + " but is not enabled in level2.properties.\n" );
 					}
 				}
 			}
@@ -40,7 +40,7 @@ public class ModelChecker {
 			if ( !level2Map.get(f).isEnabled() ) continue;
 			
 			if ( !allInfluencedFactors.contains(f) ) {
-				log.warning("Level 2 " + f + " is defined in level2.properties but not influenced by any Metric.\n");
+				log.warn("Level 2 " + f + " is defined in level2.properties but not influenced by any Metric.\n");
 			}
 		}
 		
@@ -51,10 +51,10 @@ public class ModelChecker {
 			for ( String i : f.getLevel3s() ) {
 				allinfluencedLevel3.add(i);
 				if ( !indicatorMap.containsKey(i) ) {
-					log.warning("Level 3 " + i + " is influenced by Level 2 " + f.getLevel2() + " but not defined in level3.properties.\n");
+					log.warn("Level 3 " + i + " is influenced by Level 2 " + f.getLevel2() + " but not defined in level3.properties.\n");
 				} else {
 					if ( !indicatorMap.get(i).isEnabled() ) {
-						log.warning( "Level 3 " + i + " is influenced by Level 2 " + f.getLevel2() + " but is not enabled in level3.properties.\n" );
+						log.warn( "Level 3 " + i + " is influenced by Level 2 " + f.getLevel2() + " but is not enabled in level3.properties.\n" );
 					}
 				}
 			}
@@ -66,7 +66,7 @@ public class ModelChecker {
 			if ( !indicatorMap.get(i).isEnabled() ) continue;
 			
 			if ( !allinfluencedLevel3.contains(i) ) {
-				log.warning("Level 3 " + i + " is defined in level3.properties but not influenced by any Factor defined in level2.properties.\n");
+				log.warn("Level 3 " + i + " is defined in level3.properties but not influenced by any Factor defined in level2.properties.\n");
 			}
 		}
 		

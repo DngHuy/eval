@@ -7,7 +7,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.logging.Logger;
+import org.jboss.logging.Logger;
 import java.util.regex.Pattern;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -86,7 +86,7 @@ public class Elasticsearch {
 			InetAddress address = InetAddress.getByName(elasticsearchIP);
 			client = new PreBuiltTransportClient(Settings.EMPTY).addTransportAddress( new InetSocketTransportAddress( address , 9300 ) );
 			if ( client.connectedNodes().size() == 0 ) {
-				log.severe( "Could not connect to Elasticsearch on " + elasticsearchIP + ", exiting." );
+				log.error( "Could not connect to Elasticsearch on " + elasticsearchIP + ", exiting." );
 //				System.exit(0);
 				clientCache.put(elasticsearchIP, client);
 			} else {
@@ -132,7 +132,7 @@ public class Elasticsearch {
 	    
 	    
 	    if ( sr == null ) {
-	    	log.warning("QueryDef " + queryDef.getName() + " failed.\n");
+	    	log.warn("QueryDef " + queryDef.getName() + " failed.\n");
 	    	return executionResult;
 	    }
 	    
@@ -253,7 +253,7 @@ public class Elasticsearch {
 					.params(params2), Object.class
 			);
 		} catch (RuntimeException rte) {
-			log.severe(rte.getMessage() + "\n" + rte.toString() + "\n");
+			log.error(rte.getMessage() + "\n" + rte.toString() + "\n");
 			return null;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -358,7 +358,7 @@ public class Elasticsearch {
 	private BulkResponse writeBulk( String evaluationDate, String index, String mappingType, Collection<? extends IndexItem> items)  {
 		
 		if ( items.size() == 0 ) {
-			log.warning("No items stored");
+			log.warn("No items stored");
 			return null;
 		}
 
@@ -400,7 +400,7 @@ public class Elasticsearch {
 	private String bulkResponseCheck( BulkResponse br ) {
 		
 		if ( br == null ) {
-			log.warning("Response is null");
+			log.warn("Response is null");
 			return "";
 		}
 		

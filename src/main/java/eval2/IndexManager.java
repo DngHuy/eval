@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
 import java.util.Map;
-import java.util.logging.Logger;
+import org.jboss.logging.Logger;
 
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import org.elasticsearch.action.index.IndexResponse;

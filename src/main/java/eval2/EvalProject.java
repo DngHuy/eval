@@ -9,15 +9,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
+
 import type.*;
 import type.Level2;
 
 import java.util.Properties;
 import java.util.Set;
-import java.util.logging.Logger;
+import org.jboss.logging.Logger;
 
 import util.Evaluator;
 import util.FileUtils;
@@ -49,20 +48,10 @@ public class EvalProject {
 	
 	private final String projectErrorStrategy;
 
-	void onStart(@Observes StartupEvent ev) throws Exception {
-		log.info("The application has started");
-		int count = 0;
-		while(true) {
-			System.out.println(count++);
-		}
-
-	}
-
-
-
 	public static EvalProject createEvalProject(File projectFolder, String evaluationDate ) {
 		return new EvalProject(projectFolder, evaluationDate);
 	}
+
 
 	public EvalProject(File projectFolder, String evaluationDate ) {
 
@@ -177,13 +166,13 @@ public class EvalProject {
 				level2Value = evaluate( metricDef, results );
 			} catch( RuntimeException rte ) {
 				
-				log.warning("Evaluation of formula " + metricDef + " failed. \nFactor: " + fact.getName() + "\n");
+				log.warn("Evaluation of formula " + metricDef + " failed. \nFactor: " + fact.getName() + "\n");
 
 				if ( fact.onErrorSet0() ) {
-					log.warning("Factor " + fact.getLevel2() + " set to 0.\n");
+					log.warn("Factor " + fact.getLevel2() + " set to 0.\n");
 					level2Value = 0.0;
 				} else {
-					log.warning("Factor " + fact.getLevel2() + " is dropped.\n");
+					log.warn("Factor " + fact.getLevel2() + " is dropped.\n");
 					continue;
 				}
 
@@ -192,13 +181,13 @@ public class EvalProject {
 			// level2Value not numeric?
 			if ( level2Value.isNaN() || level2Value.isInfinite() ) {
 				
-				log.warning("Evaluation of Factor " + fact.getLevel2() + " resulted in non-numeric value.\n" );
+				log.warn("Evaluation of Factor " + fact.getLevel2() + " resulted in non-numeric value.\n" );
 				
 				if ( fact.onErrorSet0() ) {
-					log.warning("Factor " + fact.getLevel2() + " set to 0.\n");
+					log.warn("Factor " + fact.getLevel2() + " set to 0.\n");
 					level2Value = 0.0;
 				} else {
-					log.warning("Factor " + fact.getLevel2() + " is dropped.\n");
+					log.warn("Factor " + fact.getLevel2() + " is dropped.\n");
 					continue;
 				}
 			} else {
@@ -303,13 +292,13 @@ public class EvalProject {
 				level3Value = evaluate( metricDef, results );
 			} catch (RuntimeException rte) {
 
-				log.warning("Evaluation of formula " + metricDef + " failed.\nLevel 3: " + l3.getName());
+				log.warn("Evaluation of formula " + metricDef + " failed.\nLevel 3: " + l3.getName());
 
 				if ( l3.onErrorSet0() ) {
-					log.warning("Level 3 " + l3.getName() + " set to 0.\n");
+					log.warn("Level 3 " + l3.getName() + " set to 0.\n");
 					level3Value = 0.0;
 				} else {
-					log.warning("Level 3 " + l3.getName() + " is dropped.\n");
+					log.warn("Level 3 " + l3.getName() + " is dropped.\n");
 					continue;
 				}
 				
@@ -317,10 +306,10 @@ public class EvalProject {
 
 			if ( level3Value.isNaN() || level3Value.isInfinite() ) {
 				if ( l3.onErrorSet0() ) {
-					log.warning("Level 3 " + l3.getName() + " set to 0.\n");
+					log.warn("Level 3 " + l3.getName() + " set to 0.\n");
 					level3Value = 0.0;
 				} else {
-					log.warning("Level 3 " + l3.getName() + " is dropped.\n");
+					log.warn("Level 3 " + l3.getName() + " is dropped.\n");
 					continue;
 				}
 			} else {
@@ -414,13 +403,13 @@ public class EvalProject {
 				
 			} catch (RuntimeException rte) {
 				
-				log.warning("Evaluation of formula " + metricDef + " failed. \nMetric: " + key);
+				log.warn("Evaluation of formula " + metricDef + " failed. \nMetric: " + key);
 				if ( metricQueryDef.onErrorDrop() ) {
-					log.warning("Metric " + key + " is dropped.");
+					log.warn("Metric " + key + " is dropped.");
 					continue;
 				} else {
 					metricValue = metricQueryDef.getErrorValue();
-					log.warning("Metric " + key + " set to " + metricValue + ".");
+					log.warn("Metric " + key + " set to " + metricValue + ".");
 				}
 				
 			}
@@ -428,13 +417,13 @@ public class EvalProject {
 			log.info("Metric " + metricQueryDef.getName() +" = " + metricValue + "\n");
 			
 			if( metricValue.isInfinite() || metricValue.isNaN() ) {
-				log.warning("Formula evaluated as NaN or inifinite.");
+				log.warn("Formula evaluated as NaN or inifinite.");
 				if ( metricQueryDef.onErrorDrop() ) {
-					log.warning("Metric " + key + " is dropped.");
+					log.warn("Metric " + key + " is dropped.");
 					continue;
 				} else {
 					metricValue = metricQueryDef.getErrorValue();
-					log.warning("Metric " + key + " set to " + metricValue + ".");
+					log.warn("Metric " + key + " set to " + metricValue + ".");
 				}
 			}
 			
