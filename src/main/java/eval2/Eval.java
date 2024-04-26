@@ -81,7 +81,7 @@ public class Eval {
             for (String ed : evaluationDates) {
                 log.info("Evaluating project folder " + projectDir.getName() + " for evaluationDate " + ed + ".\n");
                 try {
-                    EvalProject ep = EvalProject.createEvalProject(projectDir, ed);
+                    EvalProject ep = new EvalProject(projectDir, ed);
                     ep.run();
                 } catch (Exception e) {
                     e.printStackTrace();

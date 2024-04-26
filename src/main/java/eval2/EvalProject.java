@@ -1,6 +1,8 @@
 package eval2;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 import type.*;
 import util.Evaluator;
@@ -18,10 +20,10 @@ public class EvalProject {
     private String evaluationDate;
 
     // project folder containing queries, properties etc.
-    private final File projectFolder;
+    private File projectFolder;
 
     // contents of projectFolder/propect.properties
-    private final Properties projectProperties;
+    private Properties projectProperties;
 
     // Elasticsearch source
     private Elasticsearch elasticSource;
@@ -35,12 +37,11 @@ public class EvalProject {
     // metric query set of this project
     private Map<String, QueryDef> metricQuerySet;
 
-    private final String projectErrorStrategy;
+    private String projectErrorStrategy;
 
-    public static EvalProject createEvalProject(File projectFolder, String evaluationDate) {
-        return new EvalProject(projectFolder, evaluationDate);
+    @Inject
+    EvalProject() {
     }
-
 
     public EvalProject(File projectFolder, String evaluationDate) {
 

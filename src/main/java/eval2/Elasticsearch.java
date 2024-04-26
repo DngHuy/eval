@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.json.spi.JsonProvider;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
@@ -46,12 +47,16 @@ public class Elasticsearch {
 
     private TransportClient client;
 
-    private final String elasticsearchIP;
+    private String elasticsearchIP;
 
-    private final ElasticsearchClient esClient;
+    private ElasticsearchClient esClient;
 
     private static Map<String, TransportClient> clientCache = new HashMap<>();
 
+
+    @Inject
+    Elasticsearch() {
+    }
 
     /**
      * Create on address of an Elasticsearch Server
