@@ -22,6 +22,7 @@ import jakarta.json.spi.JsonProvider;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.message.BasicHeader;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
@@ -43,7 +44,7 @@ import java.util.regex.Pattern;
 @ApplicationScoped
 public class Elasticsearch {
 
-    private final Logger log = Logger.getLogger(this.getClass().getName());
+    private final Logger log = Logger.getLogger(Elasticsearch.class);
 
     private TransportClient client;
 
@@ -53,6 +54,8 @@ public class Elasticsearch {
 
     private static Map<String, TransportClient> clientCache = new HashMap<>();
 
+    @ConfigProperty(name = "elasticsearch.apikey")
+    String API_KEY;
 
     @Inject
     Elasticsearch() {
@@ -65,9 +68,9 @@ public class Elasticsearch {
      */
     public Elasticsearch(String elasticsearchIP) {
         RestClient restClient = RestClient
-                .builder(HttpHost.create(new HttpHost("localhost", 9200).toHostString()))
+                .builder(HttpHost.create(new HttpHost(elasticsearchIP, 9200).toHostString()))
                 .setDefaultHeaders(new Header[]{
-                        new BasicHeader("Authorization", "ApiKey " + "Y0p6WmJJNEJVcXFuRjVhVXUwQk46cW9yYktzRFFROXU2ZkNQUkZPeWN3UQ==")
+                        new BasicHeader("Authorization", "ApiKey " + API_KEY)
                 })
                 .build();
 

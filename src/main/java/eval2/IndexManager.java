@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class IndexManager {
 
-    private final Logger log = Logger.getLogger(this.getClass().getName());
+    private final Logger log = Logger.getLogger(IndexManager.class);
 
     private final Elasticsearch es;
 

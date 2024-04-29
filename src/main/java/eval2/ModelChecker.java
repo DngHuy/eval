@@ -9,7 +9,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class ModelChecker {
-    public static Logger log = Logger.getLogger("eval2.ModelChecker");
+
+    public static Logger log = Logger.getLogger(ModelChecker.class);
 
     public static void check(Map<String, QueryDef> metricQueries, Map<String, Level2> level2Map, Map<String, Level3> indicatorMap) {
 

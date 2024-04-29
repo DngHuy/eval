@@ -1,7 +1,6 @@
 package eval2;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 import type.*;
@@ -15,14 +14,14 @@ import java.util.Map.Entry;
 @ApplicationScoped
 public class EvalProject {
 
-    private final Logger log = Logger.getLogger(this.getClass().getName());
+    private final Logger log = Logger.getLogger(EvalProject.class);
 
     private String evaluationDate;
 
     // project folder containing queries, properties etc.
     private File projectFolder;
 
-    // contents of projectFolder/propect.properties
+    // contents of projectFolder/project.properties
     private Properties projectProperties;
 
     // Elasticsearch source

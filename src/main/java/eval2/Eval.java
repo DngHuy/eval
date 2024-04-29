@@ -1,21 +1,24 @@
 package eval2;
 
+import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.annotations.CommandLineArguments;
+import io.quarkus.scheduler.Scheduled;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
-
+@ApplicationScoped
 public class Eval {
 
-    private static final Logger log = Logger.getLogger("eval2.Eval");
+    private static final Logger log = Logger.getLogger(Eval.class);
 
-    private static final String PROJECTS_DIR = "./projects";
+    private static final String PROJECTS_DIR = System.getProperty("user.dir") + "/" + "projects";
     private static final File PROJECTS_FOLDER = new File(PROJECTS_DIR);
 
     private static final List<String> evaluationDates = new ArrayList<>();
@@ -25,12 +28,18 @@ public class Eval {
 
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-    public static void main(String[] args) {
+    @Inject
+    @CommandLineArguments
+    String[] args;
 
-        if (args.length != 0 && args.length != 2 && args.length != 4) {
-            usage();
-            return;
-        }
+    void onStart(@Observes StartupEvent ev) {
+        log.info("eval-service: start");
+    }
+
+
+    @Scheduled(every = "${eval.interval}")
+    void run() {
+        log.info("eval-service: run");
 
         if (args.length == 0) {
             evaluationDates.add(dateFormat.format(new Date()));
