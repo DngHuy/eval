@@ -57,6 +57,9 @@ public class Elasticsearch {
     @ConfigProperty(name = "elasticsearch.apikey")
     String API_KEY;
 
+    @ConfigProperty(name = "elasticsearch.port")
+    int ELASTICSEARCH_PORT;
+
     @Inject
     Elasticsearch() {
     }
@@ -68,7 +71,7 @@ public class Elasticsearch {
      */
     public Elasticsearch(String elasticsearchIP) {
         RestClient restClient = RestClient
-                .builder(HttpHost.create(new HttpHost(elasticsearchIP, 9200).toHostString()))
+                .builder(HttpHost.create(new HttpHost(elasticsearchIP, ELASTICSEARCH_PORT).toHostString()))
                 .setDefaultHeaders(new Header[]{
                         new BasicHeader("Authorization", "ApiKey " + API_KEY)
                 })
