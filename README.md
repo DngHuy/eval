@@ -1,8 +1,9 @@
-# Q-Rapids eval ![](https://img.shields.io/badge/License-Apache2.0-blue.svg)
-Qrapids-eval computes metrics, level2s, and level3s on raw data stored in Elasticsearch. In the q-rapids context, raw data is produced by a q-rapids kafka connectors (read from Jira, Sonarqube or other sources). Q-Rapids eval aggregates the raw data into metrics, and further on into level2s and level3s, according to a defined quality model.
+# Eval-Service ![](https://img.shields.io/badge/License-Apache2.0-blue.svg)
+Eval-Service computes metrics, level2s, and level3s on raw data stored in Elasticsearch. In this context, raw data is produced by a different services (Gitlab, Sonarqube or other services). The Eval-Service aggregates the raw data into metrics, and further on into level2s and level3s, according to a defined quality model.  
+This project is forked from [Q-Rapids eval](https://github.com/q-rapids/qrapids-eval). The original authors are mentioned at the bottom of this README.
 
 ## Configuration
-Q-Rapids eval is a commandline tool and is configured via a set of text files (query- and property-files) that are stored in a special folder structure. The top-folder is named 'projects'. This folder has to be present in the same directory where the qrapids-eval.jar file is stored. Each subfolder defines a quality model for a project to be evaluated.
+Eval-Service can be run as a commandline tool and is configured via a set of text files (query- and property-files) that are stored in a special folder structure. The top-folder is named 'projects'. This folder has to be present in the same directory where the eval-service.jar file is stored. Each subfolder defines a quality model for a project to be evaluated.
 
 The folder structure shown below defines the evaluation of one project 'default'.
 
@@ -46,7 +47,7 @@ dashboard.notification.url=http://<address>/QRapids-<version>/api/assessStrategi
 ### projects/default/project.properties
 The project.properties file contains the top-level configuration for a project evaluation. It defines the project.name (which will be appended to the metrics/level2s/level3s/relations index names), the addresses to source and target Elasticsearch servers, the name and other properties of the source indexes(e.g. Sonarqube, Jira), and the names and types of the created (or reused) target indexes (metrics, level2s, level3s, relations). 
 
-**NEW** in this version of qr-eval is the configurable Error Handling. Error handling takes place when the computation of metrics, level2s, or level3s fails. This can happen because of missing data, errors in formulas (e.g. division by 0) and for other reasons. The onError property allows to set a project-wide default (which can be overwritten for metrics, level2s etc.) how to handle these errors.
+**NEW** in this version of Eval-Service is the configurable Error Handling. Error handling takes place when the computation of metrics, level2s, or level3s fails. This can happen because of missing data, errors in formulas (e.g. division by 0) and for other reasons. The onError property allows to set a project-wide default (which can be overwritten for metrics, level2s etc.) how to handle these errors.
 + The 'drop' option just drops the metrics/level2s/level3s item that can't be computed, no record is stored. 
 + The 'set0' option stores a record with value 0.
 
@@ -114,7 +115,7 @@ result.lastSnapshotDate=hits.hits[0]._source.snapshotDate
 
 
 ### projects/default/params
-In the first phase of a project evaluation, qr-eval executes the queries in the params folder (*params queries*). These do not compute metrics or level2s, but allow for querying arbitrary other values (noted with prefix 'result., which then can be used in subsequent *params* and *metrics* queries as parameters. The results of params queries can be used in subsequent params and metrics queries without declaration in the associated property-files (unlike values of project.properties, where declaration is necessary)
+In the first phase of a project evaluation, Eval-Service executes the queries in the params folder (*params queries*). These do not compute metrics or level2s, but allow for querying arbitrary other values (noted with prefix 'result., which then can be used in subsequent *params* and *metrics* queries as parameters. The results of params queries can be used in subsequent params and metrics queries without declaration in the associated property-files (unlike values of project.properties, where declaration is necessary)
 
 The *params* queries are executed in sequence (alphabetical order). For this reason, it is a good practice to follow the suggested naming scheme for parameter queries and start the name of with a sequence of numbers (e.g. 01_query_name, 02_other_name). Since params queries build on each other, a proper ordering is necessary.
 
@@ -139,8 +140,8 @@ All results computed by params queries can be used as parameters (without declar
 
 __Query Parameters__
 
-Qr-eval internally uses [Elasticsearch search templates](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-template.html) to perform *params, metrics*, and other queries. Search templates can receive parameters (noted with double curly braces: {{parameter}} ). The parameters are replaced by actual values, before the query is executed. The replacement is done verbatim and doesn't care about data types. Thus, if you want a string parameter, you'll have to add quotes around the parameter yourself (as seen below with the evaluationDate parameter).
-+ The evaluationDate is available to all *params* and *metrics* queries without declaration. Qr-eval started without command-line options sets the evaluationDate to the date of today (string, format yyyy-mm-dd).
+Eval-Service internally uses [Elasticsearch search templates](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-template.html) to perform *params, metrics*, and other queries. Search templates can receive parameters (noted with double curly braces: {{parameter}} ). The parameters are replaced by actual values, before the query is executed. The replacement is done verbatim and doesn't care about data types. Thus, if you want a string parameter, you'll have to add quotes around the parameter yourself (as seen below with the evaluationDate parameter).
++ The evaluationDate is available to all *params* and *metrics* queries without declaration. Eval-Service started without command-line options sets the evaluationDate to the date of today (string, format yyyy-mm-dd).
 + Elements of the *project.properties* can be declared as a parameter with the $$-notation, as seen above (param.bcKey)
 + Literals (numbers and strings) can be used after declaration as parameters (e.g by *param.myThreshold=15*)
 + Results (noted with prefix 'result.') of *params queries* can be used as parameters in succeeding *params* and *metrics* queries without declaration.
@@ -318,7 +319,7 @@ The level2s.properties file defines level2s to compute along with their properti
 + The *decription* attribute describes the intention of the level2
 + The *level3s* attribute contains a list of influenced level3s (which are defined in a separate properties file).
 + The *weights* attribute sets the strength of the influence. Obviously, the lists in 'level3s' and 'weights' have to have the same length!
-+ The *onError* attribute tells qr-eval what to do in case of level2 computation errors (e.g. no metrics influence a level2, which results in a division by zero)
++ The *onError* attribute tells Eval-Service what to do in case of level2 computation errors (e.g. no metrics influence a level2, which results in a division by zero)
 
 Example level2 definition (codequality):
 
@@ -352,32 +353,32 @@ Defines the query for aggregation of level2s into level3s, based on relations in
 
 
 
-## Running qrapids-eval
+## Running Eval-Service
 
 ### Prerequisites
 * Elasticsearch source and target servers are running and contain appropriate data
 * Java 1.8 is installed
-* A projects folder exists in the directory of qrapids-eval<version>.jar and contains a proper quality model configuration
+* A projects folder exists in the directory of eval-service<version>.jar and contains a proper quality model configuration
 
 ### Run without commandline parameters
 The date of the current day (format yyyy-MM-dd) will be available as parameter 'evaluationDate' in params- and metrics-queries
 
 ```
-java -jar qrapids-eval-<version>-jar-with-dependencies.jar
+java -jar eval-service-<version>-jar-with-dependencies.jar
 ```
 
 ### Specify a single evaluation date
 The specified evaluationDate will be available as parameter 'evaluationDate' in params- and metrics-queries.
 
 ```
-java -jar qrapids-eval-<version>-jar-with-dependencies.jar evaluationDate 2019-03-01
+java -jar eval-service-<version>-jar-with-dependencies.jar evaluationDate 2019-03-01
 ```
 
 ### Specify a date range for evaluation
 The defined projects will be evaluated for each day in the specified range.
 
 ```
-java -jarqrapids-eval-<version>-jar-with-dependencies.jar from 2019-03-01 to 2019-03-30
+java -jar eval-service-<version>-jar-with-dependencies.jar from 2019-03-01 to 2019-03-30
 ```
 
 ### Build the connector
@@ -387,7 +388,7 @@ mvn package assembly:single
 After build, you'll find the generated jar in the target folder
 
 ## Model validation
-Before the evaluation of a project starts, qrapids-eval performs a basic evaluation of the qualtity model. A warning is logged in the following cases:
+Before the evaluation of a project starts, Eval-Service performs a basic evaluation of the qualtity model. A warning is logged in the following cases:
 + A metrics-query mentions a level2 in the level2s-property, but the level2 isn't defined in the level2s.properties file.
 + A level2 mentioned in a metric is not enabled
 + A level2 is defined in level2s.properties, but not mentioned in any metrics-query
@@ -403,5 +404,5 @@ Before the evaluation of a project starts, qrapids-eval performs a basic evaluat
 
 ## Authors
 
-* **Axel Wickenkamp, Fraunhofer IESE**
+* **Axel Wickenkamp, Fraunhofer IESE, Huy Duong**
 
