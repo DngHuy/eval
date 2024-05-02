@@ -35,9 +35,6 @@ public class Eval {
     @ConfigProperty(name = "elasticsearch.port")
     int ELASTICSEARCH_PORT;
 
-    @ConfigProperty(name = "evaluation_date")
-    String envEvaluationDate;
-
     @Inject
     @CommandLineArguments
     String[] args;
@@ -52,7 +49,7 @@ public class Eval {
     void run() {
         log.info("eval-service: run");
 
-        if (args.length == 0 && envEvaluationDate.isEmpty()) {
+        if (args.length == 0) {
             evaluationDates.add(dateFormat.format(new Date()));
         }
 
@@ -90,18 +87,6 @@ public class Eval {
                 return;
             }
         }
-
-        // for testing purposes use env instead of args
-        if (!envEvaluationDate.isEmpty()) {
-            try {
-                dateFormat.parse(envEvaluationDate);
-                evaluationDates.add(envEvaluationDate);
-            } catch (ParseException e) {
-                usage();
-                return;
-            }
-        }
-
 
      List<File> projectFolders = getProjectFolders(PROJECTS_DIR);
 
