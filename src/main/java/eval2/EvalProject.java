@@ -38,11 +38,16 @@ public class EvalProject {
 
     private String projectErrorStrategy;
 
+
+    private String apiKey;
+
+    int elasticsearchPort;
+
     @Inject
     EvalProject() {
     }
 
-    public EvalProject(File projectFolder, String evaluationDate) {
+    public EvalProject(File projectFolder, String evaluationDate, String apiKey, int port) {
 
         this.projectFolder = projectFolder;
 
@@ -53,6 +58,8 @@ public class EvalProject {
 
         this.evaluationDate = evaluationDate;
 
+        this.apiKey = apiKey;
+        this.elasticsearchPort = port;
     }
 
     public void validateModel() {
@@ -72,10 +79,10 @@ public class EvalProject {
         metricQuerySet = getQuerySet(metricQueryFolder);
 
         log.info("Connecting to Elasticsearch Source (" + projectProperties.getProperty("elasticsearch.source.ip") + ")\n");
-        elasticSource = new Elasticsearch(projectProperties.getProperty("elasticsearch.source.ip"));
+        elasticSource = new Elasticsearch(projectProperties.getProperty("elasticsearch.source.ip"), elasticsearchPort, apiKey);
 
         log.info("Connecting to Elasticsearch Target (" + projectProperties.getProperty("elasticsearch.target.ip") + ")\n");
-        elasticTarget = new Elasticsearch(projectProperties.getProperty("elasticsearch.target.ip"));
+        elasticTarget = new Elasticsearch(projectProperties.getProperty("elasticsearch.target.ip"), elasticsearchPort, apiKey);
 
         File paramQueryFolder = new File(projectFolder.getAbsolutePath() + File.separatorChar + "params");
         paramQuerySet = getQuerySet(paramQueryFolder);

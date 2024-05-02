@@ -22,12 +22,7 @@ import jakarta.json.spi.JsonProvider;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.message.BasicHeader;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.jboss.logging.Logger;
 import type.*;
 import util.JsonPath;
@@ -35,8 +30,6 @@ import util.JsonPath;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -46,19 +39,11 @@ public class Elasticsearch {
 
     private final Logger log = Logger.getLogger(Elasticsearch.class);
 
-    private TransportClient client;
 
     private String elasticsearchIP;
 
     private ElasticsearchClient esClient;
 
-    private static Map<String, TransportClient> clientCache = new HashMap<>();
-
-    @ConfigProperty(name = "elasticsearch.apikey")
-    String API_KEY;
-
-    @ConfigProperty(name = "elasticsearch.port")
-    int ELASTICSEARCH_PORT;
 
     @Inject
     Elasticsearch() {
@@ -69,11 +54,13 @@ public class Elasticsearch {
      *
      * @param elasticsearchIP
      */
-    public Elasticsearch(String elasticsearchIP) {
+    public Elasticsearch(String elasticsearchIP, int port, String apiKey) {
+        this.elasticsearchIP = elasticsearchIP;
+
         RestClient restClient = RestClient
-                .builder(HttpHost.create(new HttpHost(elasticsearchIP, ELASTICSEARCH_PORT).toHostString()))
+                .builder(HttpHost.create(new HttpHost(elasticsearchIP, port).toHostString()))
                 .setDefaultHeaders(new Header[]{
-                        new BasicHeader("Authorization", "ApiKey " + API_KEY)
+                        new BasicHeader("Authorization", "ApiKey " + apiKey)
                 })
                 .build();
 
@@ -83,39 +70,8 @@ public class Elasticsearch {
         );
         esClient = new ElasticsearchClient(transport);
 
-        this.elasticsearchIP = elasticsearchIP;
-
-        if (clientCache.containsKey(elasticsearchIP)) {
-            log.info("Using cached TransportClient.\n");
-            client = clientCache.get(elasticsearchIP);
-            return;
-        }
-
-        try {
-            InetAddress address = InetAddress.getByName(elasticsearchIP);
-            client = new PreBuiltTransportClient(Settings.EMPTY).addTransportAddress(new InetSocketTransportAddress(address, 9300));
-            if (client.connectedNodes().size() == 0) {
-                log.error("Could not connect to Elasticsearch on " + elasticsearchIP + ", exiting.");
-//				System.exit(0);
-                clientCache.put(elasticsearchIP, client);
-            } else {
-                clientCache.put(elasticsearchIP, client);
-            }
-        } catch (UnknownHostException e) {
-            System.err.println("Could not connect ot Elasticsearch on " + elasticsearchIP);
-            e.printStackTrace();
-        }
-
     }
 
-    /**
-     * Get the TransportClient
-     *
-     * @return
-     */
-    public TransportClient getClient() {
-        return client;
-    }
 
     public String getElasticsearchIP() {
         return elasticsearchIP;

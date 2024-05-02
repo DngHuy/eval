@@ -1,8 +1,6 @@
 package eval2;
 
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
-import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.client.transport.TransportClient;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
@@ -72,26 +70,6 @@ public class IndexManager {
 
         return result;
     }
-
-    /**
-     * @param index The index name to write to
-     * @param type  The mapping type to use
-     * @param id    Id of the document to be written
-     * @param o     Object key-value Map
-     * @return
-     */
-    public IndexResponse writeObject(String index, String type, String id, Map<String, Object> o) {
-
-        TransportClient client = es.getClient();
-
-        IndexResponse response = client.prepareIndex(index, type, id)
-                .setSource(o)
-                .get();
-
-        return response;
-
-    }
-
 
 }
 
