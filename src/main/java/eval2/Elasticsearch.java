@@ -73,10 +73,7 @@ public class Elasticsearch {
     }
 
     private void validateIndex() {
-        checkCreateIndex("metrics", "schema/metric.schema", "metrics");
         checkCreateIndex("relations", "schema/metric.schema", "relations");
-        checkCreateIndex("level2s", "schema/level2.schema", "level2s");
-        checkCreateIndex("level3s", "schema/level3.schema", "level3s");
     }
 
     public String getElasticsearchIP() {
@@ -276,7 +273,6 @@ public class Elasticsearch {
         log.info(bulkResponseCheck(br));
 
     }
-
 
     public void storeLevel2(Properties projectProperties, String evaluationDate, Collection<Level2> level2s) {
 

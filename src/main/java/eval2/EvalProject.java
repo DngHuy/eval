@@ -102,6 +102,8 @@ public class EvalProject {
         log.info("Storing metric relations (" + metricRelations.size() + " computed)\n");
         elasticTarget.storeRelations(projectProperties, evaluationDate, metricRelations);
 
+        try { Thread.sleep(10000); } catch (InterruptedException e) { e.printStackTrace(); }
+
         log.info("Computing Level2 ...\n");
         Collection<Level2> level2s = computeLevel2();
 
