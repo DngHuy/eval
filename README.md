@@ -311,7 +311,7 @@ metric=complexity.good / ( complexity.good + complexity.bad ) = 53 / ( 53 + 0 ) 
 ```
 
 ### projects/default/level2s.properties
-The level2s.properties file defines level2s to compute along with their properties. Factors don't do sophisticated computations, they serve as a point for the aggregation of metric values. Factors are then aggregated into level3s, so they have to specify the level3s they are influencing along with the weights of the influence. The notation used has to be read as *factorid.property=value* . 
+The level2s.properties file defines level2s to compute along with their properties. Level2 don't do sophisticated computations, they serve as a point for the aggregation of metric values. Level2s are then aggregated into level3s, so they have to specify the level3s they are influencing along with the weights of the influence. The notation used has to be read as *level2id.property=value* . 
 
 
 + The *enabled* attribute enables/disables a level2 (no records written for a level2 when disabled)

@@ -46,7 +46,7 @@ public class Level2 extends IndexItem {
 
     @Override
     public String getType() {
-        return "factors";
+        return "level2s";
     }
 
     public Boolean getEnabled() {
@@ -61,8 +61,8 @@ public class Level2 extends IndexItem {
         return id;
     }
 
-    public void setLevel2(String factor) {
-        this.id = factor;
+    public void setLevel2(String level2) {
+        this.id = level2;
     }
 
     public String[] getLevel3s() {

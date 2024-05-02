@@ -69,9 +69,15 @@ public class Elasticsearch {
                 new JacksonJsonpMapper()
         );
         esClient = new ElasticsearchClient(transport);
-
+        validateIndex();
     }
 
+    private void validateIndex() {
+        checkCreateIndex("metrics", "schema/metric.schema", "metrics");
+        checkCreateIndex("relations", "schema/metric.schema", "relations");
+        checkCreateIndex("level2s", "schema/level2.schema", "level2s");
+        checkCreateIndex("level3s", "schema/level3.schema", "level3s");
+    }
 
     public String getElasticsearchIP() {
         return elasticsearchIP;
