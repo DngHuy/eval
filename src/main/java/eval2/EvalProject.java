@@ -109,18 +109,18 @@ public class EvalProject {
 
         log.info("Storing Level2 (" + level2s.size() + " computed)\n");
         elasticTarget.storeLevel2(projectProperties, evaluationDate, level2s);
-		/*
+
 		log.info("Storing level2 relations ... \n");
 		List<Relation> level2relations = computeLevel2Relations(level2s);
 		elasticTarget.storeRelations( projectProperties, evaluationDate, level2relations );
 
-		// try { Thread.sleep(1000); } catch (InterruptedException e) { e.printStackTrace(); }
+		try { Thread.sleep(10000); } catch (InterruptedException e) { e.printStackTrace(); }
 		
 		log.info("Computing Level3  ...\n");
 		Collection<Level3> level3s = computeLevel3();
 		
 		elasticTarget.storeLevel3( projectProperties, evaluationDate, level3s );
-		*/
+
     }
 
 
@@ -219,7 +219,7 @@ public class EvalProject {
      * @param level2s
      * @return List of Relation
      */
-    private List<Relation> computeLeveL2Relations(Collection<Level2> level2s) {
+    private List<Relation> computeLevel2Relations(Collection<Level2> level2s) {
 
         List<Relation> result = new ArrayList<>();
 
@@ -264,7 +264,7 @@ public class EvalProject {
 
         String level3QueryDir = projectFolder.getAbsolutePath() + File.separatorChar + "level3";
         QueryDef level3Query = loadQueryDef(level3QueryDir, "level3");
-        level3Query.setIndex(level3Query.getProperty("index") + "." + projectProperties.getProperty("project.name"));
+        level3Query.setIndex(level3Query.getProperty("index"));
 
         Map<String, Level3> level3Map = readLevel3Map();
 

@@ -47,7 +47,7 @@ public class Level3 extends IndexItem {
 
     @Override
     public String getType() {
-        return "level3";
+        return "level3s";
     }
 
     public String getLevel3() {

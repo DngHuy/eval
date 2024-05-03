@@ -295,7 +295,7 @@ public class Elasticsearch {
     }
 
     public void storeLevel3(Properties projectProperties, String evaluationDate, Collection<Level3> level3s) {
-        String indexName = projectProperties.getProperty("level3.index") + "." + projectProperties.getProperty("project.name");
+        String indexName = projectProperties.getProperty("level3.index");
 
         checkCreateIndex(indexName, "schema/level3.schema", "level3");
 
