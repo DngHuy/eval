@@ -234,7 +234,7 @@ public class EvalProject {
                 Level3 level3 = level3Map.get(level3Id);
 
                 if (level3 == null) {
-                    log.info("Warning: Impact of Level 2 " + level2.getName() + " on undefined Level 3 " + level3Id + "is not stored.");
+                    log.info("Warning: Impact of Level 2 " + level2.getName() + " on undefined Level 3 " + level3Id + " is not stored.");
                 } else {
                     if (!level3.isEnabled()) {
                         log.info("Level 3 " + level3.getName() + " is disabled. No relation created.\n");
@@ -485,7 +485,7 @@ public class EvalProject {
                 Level2 level2 = level2Map.get(level2Id);
 
                 if (level2 == null) {
-                    log.info("Warning: Impact of Metric " + metric.getName() + " on undefined Level2 " + level2 + "is not stored.");
+                    log.info("Warning: Impact of Metric " + metric.getName() + " on undefined Level2 " + level2 + " is not stored.");
                 } else {
                     if (!level2.isEnabled()) {
                         log.info("Level2 " + level2.getName() + " is disabled. No relation created.\n");
