@@ -1,4 +1,4 @@
-package eval2;
+package elastic;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.*;
@@ -14,6 +14,7 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import mapper.QueryDef;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -24,7 +25,7 @@ import org.apache.http.HttpHost;
 import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.RestClient;
 import org.jboss.logging.Logger;
-import type.*;
+import model.*;
 import util.JsonPath;
 
 import java.io.IOException;

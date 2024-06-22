@@ -1,5 +1,3 @@
-package eval2;
-
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.annotations.CommandLineArguments;
 import io.quarkus.scheduler.Scheduled;

@@ -1,6 +1,6 @@
-package eval2;
+package mapper;
 
-import type.IndexItem;
+import model.IndexItem;
 import util.NumberUtils;
 
 import java.time.LocalDate;

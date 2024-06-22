@@ -1,4 +1,4 @@
-package type;
+package model;
 
 import java.util.Map;
 

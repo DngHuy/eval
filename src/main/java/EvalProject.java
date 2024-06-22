@@ -1,9 +1,10 @@
-package eval2;
-
+import elastic.Elasticsearch;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import mapper.ModelChecker;
+import mapper.QueryDef;
 import org.jboss.logging.Logger;
-import type.*;
+import model.*;
 import util.Evaluator;
 import util.FileUtils;
 

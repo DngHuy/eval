@@ -1,4 +1,4 @@
-package eval2;
+package elastic;
 
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import org.jboss.logging.Logger;
@@ -6,7 +6,6 @@ import org.jboss.logging.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.util.Map;
 
 public class IndexManager {
 

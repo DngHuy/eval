@@ -1,8 +1,8 @@
-package eval2;
+package mapper;
 
 import org.jboss.logging.Logger;
-import type.Level2;
-import type.Level3;
+import model.Level2;
+import model.Level3;
 
 import java.util.HashSet;
 import java.util.Map;
