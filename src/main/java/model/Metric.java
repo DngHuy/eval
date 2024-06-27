@@ -22,7 +22,7 @@ public class Metric extends IndexItem {
 
     ) {
 
-        this.project = project;
+        this.projectName = project;
         this.id = metric;
         this.evaluationDate = evaluationDate;
 
@@ -66,7 +66,7 @@ public class Metric extends IndexItem {
         Map<String, Object> result = new HashMap<String, Object>();
 
         result.put("type", getType());
-        result.put("project", project);
+        result.put("projectName", projectName);
         result.put("metric", id);
 
         result.put("level2s", parents);

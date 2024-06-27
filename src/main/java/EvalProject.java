@@ -242,7 +242,7 @@ public class EvalProject {
                         continue;
                     }
 
-                    Relation imp = new Relation(level2.getProject(), level2, level3, evaluationDate, level2.getValue() * weight, weight);
+                    Relation imp = new Relation(level2.getProjectName(), level2, level3, evaluationDate, level2.getValue() * weight, weight);
                     result.add(imp);
                 }
 
@@ -493,7 +493,7 @@ public class EvalProject {
                         continue;
                     }
 
-                    Relation imp = new Relation(metric.getProject(), metric, level2, evaluationDate, metric.getValue() * weight, weight);
+                    Relation imp = new Relation(metric.getProjectName(), metric, level2, evaluationDate, metric.getValue() * weight, weight);
                     result.add(imp);
                 }
             }

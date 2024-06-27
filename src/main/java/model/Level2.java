@@ -26,7 +26,7 @@ public class Level2 extends IndexItem {
 
         this.enabled = enabled;
 
-        this.project = project;
+        this.projectName = project;
         this.id = level2;
         this.evaluationDate = evaluationDate;
 
@@ -77,7 +77,7 @@ public class Level2 extends IndexItem {
 
         Map<String, Object> result = new HashMap<String, Object>();
 
-        result.put("project", project);
+        result.put("projectName", projectName);
         result.put("level2", id);
         result.put("evaluationDate", evaluationDate);
 

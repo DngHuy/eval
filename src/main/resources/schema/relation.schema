@@ -1,7 +1,7 @@
 {
       "properties": {
       
-        "project" : { "type": "text",
+        "projectName" : { "type": "text",
             "fields": {
               "keyword": {
                 "type": "keyword",
