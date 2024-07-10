@@ -40,7 +40,6 @@ The folder structure shown below defines the evaluation of one project 'default'
 
 The *eval.properties* file defines global configuration options. Currently, nothing defined.
 
-
 ### projects/default/project.properties
 The project.properties file contains the top-level configuration for a project evaluation. It defines the project.name (which will be appended to the metrics/level2s/level3s/relations index names), the addresses to source and target Elasticsearch servers, the name and other properties of the source indexes(e.g. Sonarqube, Jira), and the names and types of the created (or reused) target indexes (metrics, level2s, level3s, relations). 
 
