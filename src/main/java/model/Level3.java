@@ -1,32 +1,37 @@
-package type;
+package model;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class Metric extends IndexItem {
+public class Level3 extends IndexItem {
 
-    public Metric(
+    public Level3(
 
+            Boolean enabled,
             String project,
-            String metric,
+            String level3,
             String evaluationDate,
 
-            String[] level2s,
+            String[] parents,
             Double[] weights,
+
             String name,
             String description,
             String datasource,
             Double value,
             String info,
+
             String onError
 
     ) {
 
-        this.project = project;
-        this.id = metric;
+        this.enabled = enabled;
+
+        this.projectName = project;
+        this.id = level3;
         this.evaluationDate = evaluationDate;
 
-        this.parents = level2s;
+        this.parents = parents;
         this.weights = weights;
 
         this.name = name;
@@ -42,46 +47,46 @@ public class Metric extends IndexItem {
 
     @Override
     public String getType() {
-        return "metrics";
+        return "level3s";
     }
 
-
-    public String getMetric() {
+    public String getLevel3() {
         return id;
     }
 
-    public void setMetric(String metric) {
-        this.id = metric;
+    public void setLevel2(String level2) {
+        this.id = level2;
     }
 
-    public String[] getLevel2s() {
+    public String[] getLevel3s() {
         return parents;
     }
 
-    public void setLevel2s(String[] level2s) {
-        this.parents = level2s;
+    public void setLevel3s(String[] level3s) {
+        this.parents = level3s;
     }
 
     public Map<String, Object> getMap() {
+
         Map<String, Object> result = new HashMap<String, Object>();
 
-        result.put("type", getType());
-        result.put("project", project);
-        result.put("metric", id);
+        result.put("projectName", projectName);
+        result.put("level3", id);
+        result.put("evaluationDate", evaluationDate);
 
-        result.put("level2s", parents);
+        result.put("parents", parents);
         result.put("weights", weights);
 
         result.put("name", name);
         result.put("description", description);
-        result.put("source", datasource);
+        result.put("datasource", datasource);
+
         result.put("value", value);
         result.put("info", info);
-
-        result.put("evaluationDate", evaluationDate);
 
         return result;
 
     }
+
 
 }

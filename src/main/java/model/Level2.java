@@ -1,18 +1,18 @@
-package type;
+package model;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class Level3 extends IndexItem {
+public class Level2 extends IndexItem {
 
-    public Level3(
+    public Level2(
 
             Boolean enabled,
             String project,
-            String level3,
+            String level2,
             String evaluationDate,
 
-            String[] parents,
+            String[] level3s,
             Double[] weights,
 
             String name,
@@ -20,18 +20,17 @@ public class Level3 extends IndexItem {
             String datasource,
             Double value,
             String info,
-
             String onError
 
     ) {
 
         this.enabled = enabled;
 
-        this.project = project;
-        this.id = level3;
+        this.projectName = project;
+        this.id = level2;
         this.evaluationDate = evaluationDate;
 
-        this.parents = parents;
+        this.parents = level3s;
         this.weights = weights;
 
         this.name = name;
@@ -47,10 +46,18 @@ public class Level3 extends IndexItem {
 
     @Override
     public String getType() {
-        return "level3";
+        return "level2s";
     }
 
-    public String getLevel3() {
+    public Boolean getEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public String getLevel2() {
         return id;
     }
 
@@ -70,11 +77,11 @@ public class Level3 extends IndexItem {
 
         Map<String, Object> result = new HashMap<String, Object>();
 
-        result.put("project", project);
-        result.put("level3", id);
+        result.put("projectName", projectName);
+        result.put("level2", id);
         result.put("evaluationDate", evaluationDate);
 
-        result.put("parents", parents);
+        result.put("level3s", parents);
         result.put("weights", weights);
 
         result.put("name", name);

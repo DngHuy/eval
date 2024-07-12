@@ -1,4 +1,4 @@
-package eval2;
+package elastic;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.*;
@@ -14,6 +14,7 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import mapper.QueryDef;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,19 +24,13 @@ import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.jboss.logging.Logger;
-import type.*;
+import model.*;
 import util.JsonPath;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
@@ -43,15 +38,12 @@ import java.util.regex.Pattern;
 @ApplicationScoped
 public class Elasticsearch {
 
-    private final Logger log = Logger.getLogger(this.getClass().getName());
+    private final Logger log = Logger.getLogger(Elasticsearch.class);
 
-    private TransportClient client;
 
     private String elasticsearchIP;
 
     private ElasticsearchClient esClient;
-
-    private static Map<String, TransportClient> clientCache = new HashMap<>();
 
 
     @Inject
@@ -63,11 +55,13 @@ public class Elasticsearch {
      *
      * @param elasticsearchIP
      */
-    public Elasticsearch(String elasticsearchIP) {
+    public Elasticsearch(String elasticsearchIP, int port, String apiKey) {
+        this.elasticsearchIP = elasticsearchIP;
+
         RestClient restClient = RestClient
-                .builder(HttpHost.create(new HttpHost("localhost", 9200).toHostString()))
+                .builder(HttpHost.create(new HttpHost(elasticsearchIP, port).toHostString()))
                 .setDefaultHeaders(new Header[]{
-                        new BasicHeader("Authorization", "ApiKey " + "Y0p6WmJJNEJVcXFuRjVhVXUwQk46cW9yYktzRFFROXU2ZkNQUkZPeWN3UQ==")
+                        new BasicHeader("Authorization", "ApiKey " + apiKey)
                 })
                 .build();
 
@@ -76,39 +70,11 @@ public class Elasticsearch {
                 new JacksonJsonpMapper()
         );
         esClient = new ElasticsearchClient(transport);
-
-        this.elasticsearchIP = elasticsearchIP;
-
-        if (clientCache.containsKey(elasticsearchIP)) {
-            log.info("Using cached TransportClient.\n");
-            client = clientCache.get(elasticsearchIP);
-            return;
-        }
-
-        try {
-            InetAddress address = InetAddress.getByName(elasticsearchIP);
-            client = new PreBuiltTransportClient(Settings.EMPTY).addTransportAddress(new InetSocketTransportAddress(address, 9300));
-            if (client.connectedNodes().size() == 0) {
-                log.error("Could not connect to Elasticsearch on " + elasticsearchIP + ", exiting.");
-//				System.exit(0);
-                clientCache.put(elasticsearchIP, client);
-            } else {
-                clientCache.put(elasticsearchIP, client);
-            }
-        } catch (UnknownHostException e) {
-            System.err.println("Could not connect ot Elasticsearch on " + elasticsearchIP);
-            e.printStackTrace();
-        }
-
+        validateIndex();
     }
 
-    /**
-     * Get the TransportClient
-     *
-     * @return
-     */
-    public TransportClient getClient() {
-        return client;
+    private void validateIndex() {
+        checkCreateIndex("relations", "schema/metric.schema", "relations");
     }
 
     public String getElasticsearchIP() {
@@ -309,7 +275,6 @@ public class Elasticsearch {
 
     }
 
-
     public void storeLevel2(Properties projectProperties, String evaluationDate, Collection<Level2> level2s) {
 
         String indexName = projectProperties.getProperty("level2.index");
@@ -331,7 +296,7 @@ public class Elasticsearch {
     }
 
     public void storeLevel3(Properties projectProperties, String evaluationDate, Collection<Level3> level3s) {
-        String indexName = projectProperties.getProperty("level3.index") + "." + projectProperties.getProperty("project.name");
+        String indexName = projectProperties.getProperty("level3.index");
 
         checkCreateIndex(indexName, "schema/level3.schema", "level3");
 

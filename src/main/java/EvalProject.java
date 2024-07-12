@@ -1,10 +1,10 @@
-package eval2;
-
+import elastic.Elasticsearch;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
+import mapper.ModelChecker;
+import mapper.QueryDef;
 import org.jboss.logging.Logger;
-import type.*;
+import model.*;
 import util.Evaluator;
 import util.FileUtils;
 
@@ -15,14 +15,14 @@ import java.util.Map.Entry;
 @ApplicationScoped
 public class EvalProject {
 
-    private final Logger log = Logger.getLogger(this.getClass().getName());
+    private final Logger log = Logger.getLogger(EvalProject.class);
 
     private String evaluationDate;
 
     // project folder containing queries, properties etc.
     private File projectFolder;
 
-    // contents of projectFolder/propect.properties
+    // contents of projectFolder/project.properties
     private Properties projectProperties;
 
     // Elasticsearch source
@@ -39,11 +39,16 @@ public class EvalProject {
 
     private String projectErrorStrategy;
 
+
+    private String apiKey;
+
+    int elasticsearchPort;
+
     @Inject
     EvalProject() {
     }
 
-    public EvalProject(File projectFolder, String evaluationDate) {
+    public EvalProject(File projectFolder, String evaluationDate, String apiKey, int port) {
 
         this.projectFolder = projectFolder;
 
@@ -54,6 +59,8 @@ public class EvalProject {
 
         this.evaluationDate = evaluationDate;
 
+        this.apiKey = apiKey;
+        this.elasticsearchPort = port;
     }
 
     public void validateModel() {
@@ -73,10 +80,10 @@ public class EvalProject {
         metricQuerySet = getQuerySet(metricQueryFolder);
 
         log.info("Connecting to Elasticsearch Source (" + projectProperties.getProperty("elasticsearch.source.ip") + ")\n");
-        elasticSource = new Elasticsearch(projectProperties.getProperty("elasticsearch.source.ip"));
+        elasticSource = new Elasticsearch(projectProperties.getProperty("elasticsearch.source.ip"), elasticsearchPort, apiKey);
 
         log.info("Connecting to Elasticsearch Target (" + projectProperties.getProperty("elasticsearch.target.ip") + ")\n");
-        elasticTarget = new Elasticsearch(projectProperties.getProperty("elasticsearch.target.ip"));
+        elasticTarget = new Elasticsearch(projectProperties.getProperty("elasticsearch.target.ip"), elasticsearchPort, apiKey);
 
         File paramQueryFolder = new File(projectFolder.getAbsolutePath() + File.separatorChar + "params");
         paramQuerySet = getQuerySet(paramQueryFolder);
@@ -96,28 +103,30 @@ public class EvalProject {
         log.info("Storing metric relations (" + metricRelations.size() + " computed)\n");
         elasticTarget.storeRelations(projectProperties, evaluationDate, metricRelations);
 
+        try { Thread.sleep(10000); } catch (InterruptedException e) { e.printStackTrace(); }
+
         log.info("Computing Level2 ...\n");
         Collection<Level2> level2s = computeLevel2();
 
         log.info("Storing Level2 (" + level2s.size() + " computed)\n");
         elasticTarget.storeLevel2(projectProperties, evaluationDate, level2s);
-		/*
-		log.info("Storing factor relations ... \n");
-		List<Relation> factorrelations = computeFactorRelations(factors);
-		elasticTarget.storeRelations( projectProperties, evaluationDate, factorrelations );
 
-		// try { Thread.sleep(1000); } catch (InterruptedException e) { e.printStackTrace(); }
+		log.info("Storing level2 relations ... \n");
+		List<Relation> level2relations = computeLevel2Relations(level2s);
+		elasticTarget.storeRelations( projectProperties, evaluationDate, level2relations );
+
+		try { Thread.sleep(10000); } catch (InterruptedException e) { e.printStackTrace(); }
 		
 		log.info("Computing Level3  ...\n");
 		Collection<Level3> level3s = computeLevel3();
 		
 		elasticTarget.storeLevel3( projectProperties, evaluationDate, level3s );
-		*/
+
     }
 
 
     /**
-     * Computes Factor values based on relation items
+     * Computes Level 2 values based on relation items
      *
      * @return List of computed Level2
      */
@@ -129,17 +138,17 @@ public class EvalProject {
         QueryDef level2Query = loadQueryDef(level2QueryDir, "level2");
         level2Query.setIndex(level2Query.getProperty("index"));
 
-        Map<String, Level2> factorMap = readLevel2Map();
+        Map<String, Level2> level2Map = readLevel2Map();
 
-        for (Entry<String, Level2> e : factorMap.entrySet()) {
+        for (Entry<String, Level2> e : level2Map.entrySet()) {
 
-            Level2 fact = e.getValue();
+            Level2 level2 = e.getValue();
 
-            if (!fact.isEnabled()) {
-                log.info("Factor " + fact.getLevel2() + " is disabled.\n");
+            if (!level2.isEnabled()) {
+                log.info("Level2 " + level2.getLevel2() + " is disabled.\n");
                 continue;
             } else {
-                log.info("Computing factor  " + fact.getLevel2() + ".\n");
+                log.info("Computing Level2  " + level2.getLevel2() + ".\n");
             }
 
             Map<String, Object> parameters = new HashMap<>();
@@ -157,13 +166,13 @@ public class EvalProject {
                 level2Value = evaluate(metricDef, results);
             } catch (RuntimeException rte) {
 
-                log.warn("Evaluation of formula " + metricDef + " failed. \nFactor: " + fact.getName() + "\n");
+                log.warn("Evaluation of formula " + metricDef + " failed. \nLevel 2: " + level2.getName() + "\n");
 
-                if (fact.onErrorSet0()) {
-                    log.warn("Factor " + fact.getLevel2() + " set to 0.\n");
+                if (level2.onErrorSet0()) {
+                    log.warn("Level 2 " + level2.getLevel2() + " set to 0.\n");
                     level2Value = 0.0;
                 } else {
-                    log.warn("Factor " + fact.getLevel2() + " is dropped.\n");
+                    log.warn("Level 2 " + level2.getLevel2() + " is dropped.\n");
                     continue;
                 }
 
@@ -172,21 +181,21 @@ public class EvalProject {
             // level2Value not numeric?
             if (level2Value.isNaN() || level2Value.isInfinite()) {
 
-                log.warn("Evaluation of Factor " + fact.getLevel2() + " resulted in non-numeric value.\n");
+                log.warn("Evaluation of Level 2 " + level2.getLevel2() + " resulted in non-numeric value.\n");
 
-                if (fact.onErrorSet0()) {
-                    log.warn("Factor " + fact.getLevel2() + " set to 0.\n");
+                if (level2.onErrorSet0()) {
+                    log.warn("Level 2 " + level2.getLevel2() + " set to 0.\n");
                     level2Value = 0.0;
                 } else {
-                    log.warn("Factor " + fact.getLevel2() + " is dropped.\n");
+                    log.warn("Level 2 " + level2.getLevel2() + " is dropped.\n");
                     continue;
                 }
             } else {
-                log.info("Value of factor " + fact.getLevel2() + " = " + level2Value + "\n");
+                log.info("Value of Level 2 " + level2.getLevel2() + " = " + level2Value + "\n");
             }
 
-            fact.setValue(level2Value);
-            fact.setEvaluationDate(evaluationDate);
+            level2.setValue(level2Value);
+            level2.setEvaluationDate(evaluationDate);
 
             String info;
             info = "parameters: " + parameters.toString() + "\n";
@@ -195,9 +204,9 @@ public class EvalProject {
             info += "formula: " + metricDef + "\n";
             info += "value: " + level2Value;
 
-            fact.setInfo(info);
+            level2.setInfo(info);
 
-            result.add(fact);
+            result.add(level2);
         }
 
         return result;
@@ -211,7 +220,7 @@ public class EvalProject {
      * @param level2s
      * @return List of Relation
      */
-    private List<Relation> computeFactorRelations(Collection<Level2> level2s) {
+    private List<Relation> computeLevel2Relations(Collection<Level2> level2s) {
 
         List<Relation> result = new ArrayList<>();
 
@@ -226,14 +235,14 @@ public class EvalProject {
                 Level3 level3 = level3Map.get(level3Id);
 
                 if (level3 == null) {
-                    log.info("Warning: Impact of Level 2 " + level2.getName() + " on undefined Level 3 " + level3Id + "is not stored.");
+                    log.info("Warning: Impact of Level 2 " + level2.getName() + " on undefined Level 3 " + level3Id + " is not stored.");
                 } else {
                     if (!level3.isEnabled()) {
                         log.info("Level 3 " + level3.getName() + " is disabled. No relation created.\n");
                         continue;
                     }
 
-                    Relation imp = new Relation(level2.getProject(), level2, level3, evaluationDate, level2.getValue() * weight, weight);
+                    Relation imp = new Relation(level2.getProjectName(), level2, level3, evaluationDate, level2.getValue() * weight, weight);
                     result.add(imp);
                 }
 
@@ -256,7 +265,7 @@ public class EvalProject {
 
         String level3QueryDir = projectFolder.getAbsolutePath() + File.separatorChar + "level3";
         QueryDef level3Query = loadQueryDef(level3QueryDir, "level3");
-        level3Query.setIndex(level3Query.getProperty("index") + "." + projectProperties.getProperty("project.name"));
+        level3Query.setIndex(level3Query.getProperty("index"));
 
         Map<String, Level3> level3Map = readLevel3Map();
 
@@ -466,25 +475,25 @@ public class EvalProject {
 
         List<Relation> result = new ArrayList<>();
 
-        Map<String, Level2> factorMap = readLevel2Map();
+        Map<String, Level2> level2Map = readLevel2Map();
 
         for (Metric metric : metrics) {
             for (int i = 0; i < metric.getLevel2s().length; i++) {
 
-                String factorId = metric.getLevel2s()[i];
+                String level2Id = metric.getLevel2s()[i];
                 Double weight = metric.getWeights()[i];
 
-                Level2 level2 = factorMap.get(factorId);
+                Level2 level2 = level2Map.get(level2Id);
 
                 if (level2 == null) {
-                    log.info("Warning: Impact of Metric " + metric.getName() + " on undefined Factor " + level2 + "is not stored.");
+                    log.info("Warning: Impact of Metric " + metric.getName() + " on undefined Level2 " + level2 + " is not stored.");
                 } else {
                     if (!level2.isEnabled()) {
-                        log.info("Factor " + level2.getName() + " is disabled. No relation created.\n");
+                        log.info("Level2 " + level2.getName() + " is disabled. No relation created.\n");
                         continue;
                     }
 
-                    Relation imp = new Relation(metric.getProject(), metric, level2, evaluationDate, metric.getValue() * weight, weight);
+                    Relation imp = new Relation(metric.getProjectName(), metric, level2, evaluationDate, metric.getValue() * weight, weight);
                     result.add(imp);
                 }
             }
@@ -504,9 +513,9 @@ public class EvalProject {
 
         Map<String, Level2> result = new HashMap<>();
 
-        File factorPropFile = new File(projectFolder.getAbsolutePath() + File.separatorChar + "level2.properties");
+        File level2PropFile = new File(projectFolder.getAbsolutePath() + File.separatorChar + "level2.properties");
 
-        Properties level2Properties = FileUtils.loadProperties(factorPropFile);
+        Properties level2Properties = FileUtils.loadProperties(level2PropFile);
         List<String> level2s = getLevel2s(level2Properties);
 
         for (String f : level2s) {

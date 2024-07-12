@@ -1,20 +1,61 @@
 {
 	"properties" : {
 	
-		"project" : { "type" : "keyword" },
-		"metric" : { "type" : "keyword" },
+		"projectName" : { "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+        },
+		"metric" : { "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+        },
 		"evaluationDate" : { "type" : "date" },
 		
-		"level2s" : { "type" : "keyword" },
+		"level2s" : { "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+        },
 		"weights" : { "type" : "double" },
 		
-		"name" : { "type" : "keyword" },
+		"name" : { "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+        },
 		"description" : { "type" : "text" },
-		"datasource" : { "type" : "keyword" },
-
+		"datasource" : { "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+        },
 		"value" : { "type" : "double" },
 		"info" : { "type" : "text" },
-        "type": { "type": "keyword"}
+        "type": { "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        }
 
 	}
 }

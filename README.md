@@ -38,7 +38,7 @@ The folder structure shown below defines the evaluation of one project 'default'
 ```
 ### projects/eval.properties
 
-The *eval.properties* file defines global configuration options.
+The *eval.properties* file defines global configuration options. Currently, nothing defined.
 
 ### projects/default/project.properties
 The project.properties file contains the top-level configuration for a project evaluation. It defines the project.name (which will be appended to the metrics/level2s/level3s/relations index names), the addresses to source and target Elasticsearch servers, the name and other properties of the source indexes(e.g. Sonarqube, Jira), and the names and types of the created (or reused) target indexes (metrics, level2s, level3s, relations). 
@@ -307,7 +307,7 @@ metric=complexity.good / ( complexity.good + complexity.bad ) = 53 / ( 53 + 0 ) 
 ```
 
 ### projects/default/level2s.properties
-The level2s.properties file defines level2s to compute along with their properties. Factors don't do sophisticated computations, they serve as a point for the aggregation of metric values. Factors are then aggregated into level3s, so they have to specify the level3s they are influencing along with the weights of the influence. The notation used has to be read as *factorid.property=value* . 
+The level2s.properties file defines level2s to compute along with their properties. Level2 don't do sophisticated computations, they serve as a point for the aggregation of metric values. Level2s are then aggregated into level3s, so they have to specify the level3s they are influencing along with the weights of the influence. The notation used has to be read as *level2id.property=value* . 
 
 
 + The *enabled* attribute enables/disables a level2 (no records written for a level2 when disabled)

@@ -1,21 +1,23 @@
-package eval2;
-
+import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.annotations.CommandLineArguments;
+import io.quarkus.scheduler.Scheduled;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
-
+@ApplicationScoped
 public class Eval {
 
-    private static final Logger log = Logger.getLogger("eval2.Eval");
+    private static final Logger log = Logger.getLogger(Eval.class);
 
-    private static final String PROJECTS_DIR = "./projects";
+    private static final String PROJECTS_DIR = System.getProperty("user.dir") + "/" + "projects";
     private static final File PROJECTS_FOLDER = new File(PROJECTS_DIR);
 
     private static final List<String> evaluationDates = new ArrayList<>();
@@ -25,12 +27,25 @@ public class Eval {
 
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-    public static void main(String[] args) {
+    @ConfigProperty(name = "elasticsearch.apikey")
+    String API_KEY;
 
-        if (args.length != 0 && args.length != 2 && args.length != 4) {
-            usage();
-            return;
-        }
+    @ConfigProperty(name = "elasticsearch.port")
+    int ELASTICSEARCH_PORT;
+
+    @Inject
+    @CommandLineArguments
+    String[] args;
+
+    void onStart(@Observes StartupEvent ev) {
+
+        log.info("eval-service: start");
+    }
+
+
+    @Scheduled(every = "${eval.interval}")
+    void run() {
+        log.info("eval-service: run");
 
         if (args.length == 0) {
             evaluationDates.add(dateFormat.format(new Date()));
@@ -71,17 +86,17 @@ public class Eval {
             }
         }
 
-        List<File> projectFolders = getProjectFolders(PROJECTS_DIR);
+     List<File> projectFolders = getProjectFolders(PROJECTS_DIR);
 
-        evaluate(projectFolders);
+     evaluate(projectFolders, API_KEY, ELASTICSEARCH_PORT);
     }
 
-    private static void evaluate(List<File> projectFolders) {
+    private void evaluate(List<File> projectFolders, String apiKey, int port) {
         for (File projectDir : projectFolders) {
             for (String ed : evaluationDates) {
                 log.info("Evaluating project folder " + projectDir.getName() + " for evaluationDate " + ed + ".\n");
                 try {
-                    EvalProject ep = new EvalProject(projectDir, ed);
+                    EvalProject ep = new EvalProject(projectDir, ed, apiKey, port);
                     ep.run();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -91,7 +106,7 @@ public class Eval {
         }
     }
 
-    public static void evaluateQualityModel(String dir, Date date1, Date date2) throws ParseException {
+    public void evaluateQualityModel(String dir, Date date1, Date date2) throws ParseException {
 
         // read parameters
         if (date1 != null && date2 != null) { // if two dates are passed --> we obtain a from and to dates
@@ -106,7 +121,7 @@ public class Eval {
 
         List<File> projectFolders = getProjectFolders(dir);
 
-        evaluate(projectFolders);
+        evaluate(projectFolders, API_KEY, ELASTICSEARCH_PORT);
     }
 
     private static List<String> enumeratePeriod(Date fromDate, Date toDate) {

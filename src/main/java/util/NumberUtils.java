@@ -16,11 +16,4 @@ public class NumberUtils {
         }
 
     }
-
-    public static void main(String[] args) {
-        Object n = getNumberOrString("12.1");
-
-        System.out.println(n);
-    }
-
 }

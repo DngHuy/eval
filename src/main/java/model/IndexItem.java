@@ -1,4 +1,4 @@
-package type;
+package model;
 
 import java.util.Map;
 
@@ -6,7 +6,7 @@ public abstract class IndexItem {
 
     protected boolean enabled;
 
-    protected String project;
+    protected String projectName;
     protected String id;
     protected String evaluationDate;
 
@@ -24,7 +24,7 @@ public abstract class IndexItem {
     protected String onError = ON_ERROR_DROP;
 
     public String getElasticId() {
-        return this.project + "-" + this.id + "-" + this.evaluationDate;
+        return this.projectName + "-" + this.id + "-" + this.evaluationDate;
     }
 
     ;
@@ -41,12 +41,12 @@ public abstract class IndexItem {
         this.enabled = enabled;
     }
 
-    public String getProject() {
-        return project;
+    public String getProjectName() {
+        return projectName;
     }
 
-    public void setProject(String project) {
-        this.project = project;
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
     }
 
     public String getEvaluationDate() {

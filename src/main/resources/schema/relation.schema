@@ -1,16 +1,49 @@
 {
       "properties": {
       
-        "project" : { "type": "keyword"},
+        "projectName" : { "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+        },
         "relation" : { "type" : "keyword" },
         "evaluationDate" : { "type" : "date" },
         
-        "sourceId" : { "type": "keyword"},
-        "sourceType" : { "type": "keyword"},
-        
-        "targetId" : { "type": "keyword"},
-        "targetType" : { "type": "keyword"},
-        
+        "sourceId" : { "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+        },
+        "sourceType" : { "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+        },
+        "targetId" : { "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+        },
+        "targetType" : { "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+        },
         "value" : { "type" : "double"},
         "weight" : { "type" : "double" }
         

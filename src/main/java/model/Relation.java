@@ -1,4 +1,4 @@
-package type;
+package model;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +18,7 @@ public class Relation extends IndexItem {
             Double weight
     ) {
         this.id = source.id + "->" + target.id;
-        this.project = project;
+        this.projectName = project;
         this.source = source;
         this.target = target;
         this.evaluationDate = evaluationDate;
@@ -31,7 +31,7 @@ public class Relation extends IndexItem {
 
         result.put("relation", getElasticId());
 
-        result.put("project", project);
+        result.put("projectName", projectName);
 
         result.put("sourceType", source.getType());
         result.put("sourceId", source.getElasticId());
@@ -53,15 +53,15 @@ public class Relation extends IndexItem {
     }
 
     public String getElasticId() {
-        return project + "-" + source.id + "->" + target.id + "-" + evaluationDate;
+        return projectName + "-" + source.id + "->" + target.id + "-" + evaluationDate;
     }
 
-    public String getProject() {
-        return project;
+    public String getProjectName() {
+        return projectName;
     }
 
-    public void setProject(String project) {
-        this.project = project;
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
     }
 
     public String getEvaluationDate() {
